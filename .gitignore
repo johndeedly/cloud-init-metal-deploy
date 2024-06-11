@@ -1,0 +1,6 @@
+CIDATA/img/*
+!CIDATA/img/.gitkeep
+output/
+*.qcow2
+*.tar.xz
+*.iso

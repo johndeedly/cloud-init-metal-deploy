@@ -1,0 +1,243 @@
+#cloud-config
+
+### allow packer to connect via ssh as root user
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      password: packer-build-passwd
+      type: text
+
+growpart:
+  mode: off
+resize_rootfs: false
+
+locale: de_DE
+
+bootcmd:
+  # stop and disable reflector to be able to change the pacman mirrorlist
+  - systemctl stop reflector.service reflector.timer
+  - systemctl disable reflector.service reflector.timer
+  # time travel the repositories back to the build day of the iso
+  # the path year/month/day is resolved through the file "/version" in the archiso ram fs
+  - echo "Server=https://archive.archlinux.org/repos/$(head -1 /version | sed -e 's|\.|/|g')/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
+  # prepare first boot commands
+  - mkdir -p /var/lib/cloud/scripts/per-boot
+  # load the german keyboard layout for the current session
+  - loadkeys de-latin1
+
+write_files:
+  # all interfaces perform a dhcp lookup
+  - path: /etc/systemd/network/20-wired.network
+    content: |
+      [Match]
+      Name=en* eth*
+      Type=ether
+
+      [Network]
+      DHCP=yes
+      MulticastDNS=yes
+
+      [DHCPv4]
+      RouteMetric=10
+
+      [IPv6AcceptRA]
+      RouteMetric=10
+
+      [DHCPPrefixDelegation]
+      RouteMetric=10
+
+      [IPv6Prefix]
+      RouteMetric=10
+    owner: 'root:root'
+    permissions: '0644'
+  # only one interface needs to be configured to be "online"
+  - path: /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any
+    owner: 'root:root'
+    permissions: '0644'
+  # sshd config -> allow root, password auth, use pam
+  - path: /etc/ssh/sshd_config
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      UsePAM yes
+    owner: 'root:root'
+    permissions: '0644'
+    append: true
+  # enable german locale
+  - path: /etc/default/locale
+    content: LANG=de_DE.UTF-8
+    owner: 'root:root'
+    permissions: '0644'
+  # enable central european timezone
+  - path: /etc/timezone
+    content: CET
+    owner: 'root:root'
+    permissions: '0644'
+  # enable german keyboard
+  - path: /etc/vconsole.conf
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  # Debian/Ubuntu additional keyboard config
+  - path: /etc/default/keyboard
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  # Debian/Ubuntu patched out systemd vconsole setup for some reason... thanks for nothing
+  - path: /etc/default/console-setup
+    content: |
+      CHARMAP="UTF-8"
+      CODESET="Lat2"
+      FONTFACE="Terminus"
+      FONTSIZE="16"
+    owner: 'root:root'
+    permissions: '0644'
+  # first boot commands (originally spread over bootcmd and runcmd)
+  - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
+    content: |
+      #!/usr/bin/env bash
+
+      # prevent bootcmd from running multiple times
+      if [ -f /cidata_boot ]; then
+        exit 0
+      fi
+      touch /cidata_boot
+      
+      exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
+      
+      # Generate locales
+      sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+      echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+      locale-gen
+      
+      # Configure timezone
+      rm /etc/localtime || true
+      ln -s /usr/share/zoneinfo/CET /etc/localtime
+
+      # Configure keyboard
+      loadkeys de-latin1 || true
+    
+      sleep 1
+
+      # write status
+      echo "boot_complete" > /cidata_boot
+    owner: 'root:root'
+    permissions: '0755'
+  # configure the underlying system
+  - path: /var/lib/cloud/scripts/per-boot/10_provision_system.sh
+    content: |
+      #!/usr/bin/env bash
+
+      # prevent bootcmd from running multiple times
+      if [ -f /cidata_provision_system ]; then
+        exit 0
+      fi
+      touch /cidata_provision_system
+      
+      exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
+
+      # Remount copy on write space
+      mount -o remount,size=75% /run/archiso/cowspace || true
+
+      # Make the journal log persistent on ramfs
+      mkdir -p /var/log/journal
+      systemd-tmpfiles --create --prefix /var/log/journal
+      systemctl restart systemd-journald
+
+      # Wait for pacman keyring init to be done
+      while ! systemctl show pacman-init.service | grep SubState=exited; do
+        systemctl --no-pager status -n0 pacman-init.service || true
+        sleep 5
+      done
+
+      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs libisoburn
+
+      # search for the CIDATA drive or partition and mount it
+      CIDATA_DEVICE=$(lsblk -nidyo PATH,LABEL,FSTYPE | sed -e '/[cC][iI][dD][aA][tT][aA]/!d' -e '/[iI][sS][oO]9660/!d' | head -1 | cut -d' ' -f1)
+
+      # mount step
+      if [ -z "$CIDATA_DEVICE" ]; then
+        echo "no_cidata_device" > /cidata_provision_system
+        exit 0
+      fi
+      mkdir -p /iso
+      mount "$CIDATA_DEVICE" /iso
+
+      # copy step
+      if ! mountpoint -q -- /iso; then
+        echo "no_cidata_mount" > /cidata_provision_system
+        exit 0
+      fi
+
+      CLOUD_IMAGE_PATH="/iso/img/archlinux-x86_64-cloudimg.qcow2"
+      if [ -e /dev/sda ]; then
+        TARGET_DEVICE="/dev/sda"
+      elif [ -e /dev/vda ]; then
+        TARGET_DEVICE="/dev/vda"
+      else
+        echo "no_target_device" > /cidata_provision_system
+        exit 0
+      fi
+      
+      if file "${CLOUD_IMAGE_PATH}" | grep -q QCOW; then
+        guestfish --ro -a "${CLOUD_IMAGE_PATH}" run : download /dev/sda - | \
+          dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
+      elif file "${CLOUD_IMAGE_PATH}" | grep -q "XZ compressed"; then
+        tar -xO disk.raw -f "${CLOUD_IMAGE_PATH}" | \
+          dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
+      else
+        echo "wrong_image_file" > /cidata_provision_system
+        exit 0
+      fi
+      
+      # update partitions in kernel
+      partx -u "${TARGET_DEVICE}"
+      sleep 1
+
+      # create cidata partition at the end of disk
+      LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
+        mkpart cidata fat32 -6MiB -4MiB
+      sleep 2
+      
+      # update partitions in kernel again
+      partx -u "${TARGET_DEVICE}"
+      sleep 1
+
+      # resize main ext4/btrfs partition and filesystem
+      ROOT_PARTITION=( $(lsblk -no PATH,PARTN,FSTYPE "${TARGET_DEVICE}" | sed -e '/\(ext4\|EXT4\|btrfs\|BTRFS\)/!d' | head -1) )
+      growpart "${TARGET_DEVICE}" "${ROOT_PARTITION[1]}"
+      resize2fs "${ROOT_PARTITION[0]}"
+
+      # write the cidata iso to the cidata partition on disk
+      CIDATA_PART=( $(lsblk -no PATH,PARTLABEL "${TARGET_DEVICE}" | sed -e '/cidata/I!d' | head -1) )
+      dd if=/dev/zero "of=${CIDATA_PART[0]}" bs=1M count=2 iflag=fullblock status=progress
+      mkfs.vfat -n CIDATA "${CIDATA_PART[0]}"
+      mcopy -oi "${CIDATA_PART[0]}" /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config ::
+      
+      # bootable system
+      EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -1) )
+      echo "EFI: ${TARGET_DEVICE}, partition ${EFI_PART[0]}"
+      efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI
+      
+      sleep 1
+      lsblk -o +LABEL,PARTLABEL,FSTYPE "${TARGET_DEVICE}"
+      sleep 5
+
+      # write status
+      echo "provisioning_completed" > /cidata_provision_system
+    owner: 'root:root'
+    permissions: '0755'
