@@ -1,0 +1,116 @@
+#cloud-config
+
+### allow packer to connect to archiso livecd via ssh as root user
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      password: packer-build-passwd
+      type: text
+
+growpart:
+  mode: off
+resize_rootfs: false
+
+locale: de_DE
+
+### update hostname
+hostname: archlinux
+create_hostname_file: true
+# https://www.icann.org/en/public-comment/proceeding/proposed-top-level-domain-string-for-private-use-24-01-2024
+fqdn: archlinux.internal
+prefer_fqdn_over_hostname: true
+
+write_files:
+  # all interfaces perform a dhcp lookup
+  - path: /etc/systemd/network/20-wired.network
+    content: |
+      [Match]
+      Name=en* eth*
+      Type=ether
+
+      [Network]
+      DHCP=yes
+      MulticastDNS=yes
+
+      [DHCPv4]
+      RouteMetric=10
+
+      [IPv6AcceptRA]
+      RouteMetric=10
+
+      [DHCPPrefixDelegation]
+      RouteMetric=10
+
+      [IPv6Prefix]
+      RouteMetric=10
+    owner: 'root:root'
+    permissions: '0644'
+  # only one interface needs to be configured to be "online"
+  - path: /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any
+    owner: 'root:root'
+    permissions: '0644'
+  # sshd config -> allow root, password auth, use pam
+  - path: /etc/ssh/sshd_config
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      UsePAM yes
+    owner: 'root:root'
+    permissions: '0644'
+    append: true
+  # enable german locale
+  - path: /etc/default/locale
+    content: LANG=de_DE.UTF-8
+    owner: 'root:root'
+    permissions: '0644'
+  # enable central european timezone
+  - path: /etc/timezone
+    content: CET
+    owner: 'root:root'
+    permissions: '0644'
+  # enable german keyboard
+  - path: /etc/vconsole.conf
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  # first boot commands (originally spread over bootcmd and runcmd)
+  - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
+    content: |
+      #!/usr/bin/env bash
+
+      # prevent bootcmd from running multiple times
+      if [ -f /cidata_boot ]; then
+        exit 0
+      fi
+      touch /cidata_boot
+      
+      exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
+      
+      # Generate locales
+      sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+      echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+      locale-gen
+      
+      # Configure timezone
+      rm /etc/localtime || true
+      ln -s /usr/share/zoneinfo/CET /etc/localtime
+
+      # Configure keyboard
+      loadkeys de-latin1 || true
+    
+      sleep 1
+
+      # write status
+      echo "boot_complete" > /cidata_boot
+    owner: 'root:root'
+    permissions: '0755'

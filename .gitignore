@@ -1,5 +1,9 @@
 CIDATA/img/*
 !CIDATA/img/.gitkeep
+!CIDATA/img/meta-data
+!CIDATA/img/network-config
+!CIDATA/img/user-data
+!CIDATA/img/vendor-data
 output/
 *.qcow2
 *.tar.xz

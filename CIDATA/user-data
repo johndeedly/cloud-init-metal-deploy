@@ -88,24 +88,6 @@ write_files:
       FONT=Lat2-Terminus16
     owner: 'root:root'
     permissions: '0644'
-  # Debian/Ubuntu additional keyboard config
-  - path: /etc/default/keyboard
-    content: |
-      KEYMAP=de-latin1
-      XKBLAYOUT=de
-      XKBMODEL=pc105
-      FONT=Lat2-Terminus16
-    owner: 'root:root'
-    permissions: '0644'
-  # Debian/Ubuntu patched out systemd vconsole setup for some reason... thanks for nothing
-  - path: /etc/default/console-setup
-    content: |
-      CHARMAP="UTF-8"
-      CODESET="Lat2"
-      FONTFACE="Terminus"
-      FONTSIZE="16"
-    owner: 'root:root'
-    permissions: '0644'
   # first boot commands (originally spread over bootcmd and runcmd)
   - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
     content: |
@@ -141,7 +123,7 @@ write_files:
   - path: /var/lib/cloud/scripts/per-boot/10_provision_system.sh
     content: |
       #!/usr/bin/env bash
-
+      
       # prevent bootcmd from running multiple times
       if [ -f /cidata_provision_system ]; then
         exit 0
@@ -164,7 +146,7 @@ write_files:
         sleep 5
       done
 
-      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs libisoburn
+      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs qemu-base libisoburn
 
       # search for the CIDATA drive or partition and mount it
       CIDATA_DEVICE=$(lsblk -nidyo PATH,LABEL,FSTYPE | sed -e '/[cC][iI][dD][aA][tT][aA]/!d' -e '/[iI][sS][oO]9660/!d' | head -1 | cut -d' ' -f1)
@@ -194,10 +176,10 @@ write_files:
       fi
       
       if file "${CLOUD_IMAGE_PATH}" | grep -q QCOW; then
-        guestfish --ro -a "${CLOUD_IMAGE_PATH}" run : download /dev/sda - | \
-          dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
-      elif file "${CLOUD_IMAGE_PATH}" | grep -q "XZ compressed"; then
-        tar -xO disk.raw -f "${CLOUD_IMAGE_PATH}" | \
+        qemu-img convert -O raw "${CLOUD_IMAGE_PATH}" "${TARGET_DEVICE}"
+      elif file "${CLOUD_IMAGE_PATH}" | grep -q "\(XZ\|gzip\) compressed"; then
+        LARGEST_FILE=$(tar -tvf "${CLOUD_IMAGE_PATH}" | sort -n | grep -vE "^d" | head -1 | awk '{print $9}')
+        tar -xO "${LARGEST_FILE}" -f "${CLOUD_IMAGE_PATH}" | \
           dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
       else
         echo "wrong_image_file" > /cidata_provision_system
@@ -232,6 +214,36 @@ write_files:
       EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -1) )
       echo "EFI: ${TARGET_DEVICE}, partition ${EFI_PART[0]}"
       efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI
+
+      # configure logging to tty1 for archlinux
+      mount "${ROOT_PARTITION[0]}" /mnt
+      sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
+      sed -i 's/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX="net.ifnames=1"/g' /mnt/etc/default/grub
+      sed -i 's/^GRUB_TERMINAL=/#GRUB_TERMINAL=/g' /mnt/etc/default/grub
+      sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
+      arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+
+      # main config file for cloud-init
+      mkdir -p /mnt/etc/cloud
+      cp /etc/cloud/cloud.cfg /mnt/etc/cloud/cloud.cfg || true
+      
+      # config files for network
+      mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
+      cp /etc/systemd/network/20-wired.network /mnt/etc/systemd/network/20-wired.network || true
+      cp /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf || true
+      
+      # config files for i18n
+      cp /etc/locale.gen /mnt/etc/locale.gen || true
+      cp /etc/locale.conf /mnt/etc/locale.conf || true
+      rm /mnt/etc/localtime || true
+      ln -s /usr/share/zoneinfo/CET /mnt/etc/localtime
+      cp /etc/default/locale /mnt/etc/default/locale || true        
+      cp /etc/timezone /mnt/etc/timezone || true
+      cp /etc/vconsole.conf /mnt/etc/vconsole.conf || true
+      
+      # finalize /mnt
+      sync
+      umount -l /mnt
       
       sleep 1
       lsblk -o +LABEL,PARTLABEL,FSTYPE "${TARGET_DEVICE}"
