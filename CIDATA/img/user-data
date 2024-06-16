@@ -18,6 +18,12 @@ resize_rootfs: true
 
 locale: de_DE
 
+bootcmd:
+  # prepare first boot commands
+  - mkdir -p /var/lib/cloud/scripts/per-boot
+  # load the german keyboard layout for the current session
+  - loadkeys de-latin1
+
 ### update hostname
 hostname: archlinux
 create_hostname_file: true
