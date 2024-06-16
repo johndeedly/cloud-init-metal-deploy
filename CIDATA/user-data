@@ -230,10 +230,6 @@ write_files:
       sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
       arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
-      # main config file for cloud-init
-      mkdir -p /mnt/etc/cloud
-      cp /etc/cloud/cloud.cfg /mnt/etc/cloud/cloud.cfg || true
-      
       # config files for network
       mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
       cp /etc/systemd/network/20-wired.network /mnt/etc/systemd/network/20-wired.network || true
@@ -258,5 +254,8 @@ write_files:
 
       # write status
       echo "provisioning_completed" > /cidata_provision_system
+
+      # reboot system
+      ( ( sleep 15 && systemctl reboot ) & )
     owner: 'root:root'
     permissions: '0755'

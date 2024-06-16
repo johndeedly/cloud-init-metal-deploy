@@ -74,10 +74,10 @@ build {
     timeout      = "10s"
     max_retries  = 20
     inline = [
-      "while ! [ -f /cidata_provision_system ]; do",
+      "while ! [ -f /cidata_archlinux ]; do",
       "  sleep 17",
       "done",
-      "while ! grep \"provisioning_completed\" /cidata_provision_system; do",
+      "while ! grep \"provision_complete\" /cidata_archlinux; do",
       "  sleep 17",
       "done"
     ]
