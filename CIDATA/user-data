@@ -192,7 +192,7 @@ write_files:
 
       # create cidata partition at the end of disk
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
-        mkpart cidata fat32 -6MiB -4MiB
+        mkpart cidata fat32 -8MiB -4MiB
       sleep 2
       
       # update partitions in kernel again
@@ -202,7 +202,14 @@ write_files:
       # resize main ext4/btrfs partition and filesystem
       ROOT_PARTITION=( $(lsblk -no PATH,PARTN,FSTYPE "${TARGET_DEVICE}" | sed -e '/\(ext4\|EXT4\|btrfs\|BTRFS\)/!d' | head -1) )
       growpart "${TARGET_DEVICE}" "${ROOT_PARTITION[1]}"
-      resize2fs "${ROOT_PARTITION[0]}"
+      if [ "${ROOT_PARTITION[2]}" == "btrfs" ] || [ "${ROOT_PARTITION[2]}" == "BTRFS" ]; then
+        mount "${ROOT_PARTITION[0]}" /mnt
+        btrfs filesystem resize max /mnt
+        sync
+        umount -l /mnt
+      elif [ "${ROOT_PARTITION[2]}" == "ext4" ] || [ "${ROOT_PARTITION[2]}" == "EXT4" ]; then
+        resize2fs "${ROOT_PARTITION[0]}"
+      fi
 
       # write the cidata iso to the cidata partition on disk
       CIDATA_PART=( $(lsblk -no PATH,PARTLABEL "${TARGET_DEVICE}" | sed -e '/cidata/I!d' | head -1) )
