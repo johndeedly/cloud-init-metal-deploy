@@ -224,8 +224,8 @@ write_files:
 
       # configure logging to tty1 for archlinux
       mount "${ROOT_PARTITION[0]}" /mnt
-      sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
-      sed -i 's/^GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX="net.ifnames=1"/g' /mnt/etc/default/grub
+      sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="console=tty1 loglevel=3 rw acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
+      sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/g' /mnt/etc/default/grub
       sed -i 's/^GRUB_TERMINAL=/#GRUB_TERMINAL=/g' /mnt/etc/default/grub
       sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
       arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg

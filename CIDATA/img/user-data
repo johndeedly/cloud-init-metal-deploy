@@ -10,8 +10,11 @@ chpasswd:
       type: text
 
 growpart:
-  mode: off
-resize_rootfs: false
+  mode: auto
+  devices:
+    - /
+  ignore_growroot_disabled: true
+resize_rootfs: true
 
 locale: de_DE
 
