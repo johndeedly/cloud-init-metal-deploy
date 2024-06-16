@@ -33,8 +33,16 @@ function Packer-BuildAppliance {
 
 New-Item -Path $PWD.ProviderPath -Name "output" -ItemType "directory" -Force | Out-Null
 $env:PACKER_LOG=1
-# QEMU
-$env:PACKER_LOG_PATH="output/archlinux.cloud-packerlog.txt"
-if ((Packer-BuildAppliance -SearchFileName "*archlinux.cloud*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default archlinux.cloud.pkr.hcl") -ne 0) {
-break
+if ($IsWindows -or $env:OS -or $ForceVirtualbox) {
+  # VBOX
+  $env:PACKER_LOG_PATH="output/archlinux.cloud-packerlog.txt"
+  if ((Packer-BuildAppliance -SearchFileName "*archlinux.cloud*.ova" -ArgList "build -force -on-error=ask -only=virtualbox-iso.default archlinux.cloud.pkr.hcl") -ne 0) {
+  	break
+  }
+} else {
+  # QEMU
+  $env:PACKER_LOG_PATH="output/archlinux.cloud-packerlog.txt"
+  if ((Packer-BuildAppliance -SearchFileName "*archlinux.cloud*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default archlinux.cloud.pkr.hcl") -ne 0) {
+  	break
+  }
 }
