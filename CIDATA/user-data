@@ -149,7 +149,7 @@ write_files:
       LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs qemu-base libisoburn
 
       # search for the CIDATA drive or partition and mount it
-      CIDATA_DEVICE=$(lsblk -nidyo PATH,LABEL,FSTYPE | sed -e '/[cC][iI][dD][aA][tT][aA]/!d' -e '/[iI][sS][oO]9660/!d' | head -1 | cut -d' ' -f1)
+      CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/[cC][iI][dD][aA][tT][aA]/!d' -e '/[iI][sS][oO]9660/!d' | head -1 | cut -d' ' -f1)
 
       # mount step
       if [ -z "$CIDATA_DEVICE" ]; then
