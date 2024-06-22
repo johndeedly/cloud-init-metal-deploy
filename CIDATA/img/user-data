@@ -135,6 +135,8 @@ write_files:
       
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
+      
       # disable cloud-init on future startups
       touch /etc/cloud/cloud-init.disabled
 
