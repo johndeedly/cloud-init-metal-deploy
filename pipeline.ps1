@@ -35,14 +35,14 @@ New-Item -Path $PWD.ProviderPath -Name "output" -ItemType "directory" -Force | O
 $env:PACKER_LOG=1
 if ($IsWindows -or $env:OS -or $ForceVirtualbox) {
   # VBOX
-  $env:PACKER_LOG_PATH="output/archlinux.cloud-packerlog.txt"
-  if ((Packer-BuildAppliance -SearchFileName "*archlinux.cloud*.ova" -ArgList "build -force -on-error=ask -only=virtualbox-iso.default archlinux.cloud.pkr.hcl") -ne 0) {
+  $env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
+  if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.ova" -ArgList "build -force -on-error=ask -only=virtualbox-iso.default cloud.ready.pkr.hcl") -ne 0) {
   	break
   }
 } else {
   # QEMU
-  $env:PACKER_LOG_PATH="output/archlinux.cloud-packerlog.txt"
-  if ((Packer-BuildAppliance -SearchFileName "*archlinux.cloud*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default archlinux.cloud.pkr.hcl") -ne 0) {
+  $env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
+  if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default cloud.ready.pkr.hcl") -ne 0) {
   	break
   }
 }

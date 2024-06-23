@@ -70,11 +70,11 @@ source "qemu" "default" {
   headless             = var.headless
   iso_checksum         = "none"
   iso_url              = "archlinux-x86_64.iso"
-  output_directory     = "output/archlinux"
+  output_directory     = "output/cloud_ready"
   ssh_username         = "root"
   ssh_password         = "packer-build-passwd"
   ssh_timeout          = "10m"
-  vm_name              = "archlinux.cloud-x86_64.qcow2"
+  vm_name              = "cloud_ready-x86_64.qcow2"
 }
 
 
@@ -94,14 +94,14 @@ source "virtualbox-iso" "default" {
   iso_checksum             = "none"
   iso_interface            = "virtio"
   iso_url                  = "archlinux-x86_64.iso"
-  output_directory         = "output/archlinux.cloud-x86_64"
-  output_filename          = "../archlinux.cloud-x86_64"
+  output_directory         = "output/cloud_ready-x86_64"
+  output_filename          = "../cloud_ready-x86_64"
   ssh_username             = "root"
   ssh_password             = "packer-build-passwd"
   ssh_timeout              = "10m"
   vboxmanage               = [["modifyvm", "{{ .Name }}", "--chipset", "ich9", "--firmware", "efi", "--cpus", "${var.cpu_cores}", "--audio-driver", "${var.sound_driver}", "--audio-out", "on", "--audio-enabled", "on", "--usb", "on", "--usb-xhci", "on", "--clipboard", "hosttoguest", "--draganddrop", "hosttoguest", "--graphicscontroller", "vmsvga", "--acpi", "on", "--ioapic", "on", "--apic", "on", "--accelerate3d", "${var.accel_graphics}", "--accelerate2dvideo", "on", "--vram", "128", "--pae", "on", "--nested-hw-virt", "on", "--paravirtprovider", "kvm", "--hpet", "on", "--hwvirtex", "on", "--largepages", "on", "--vtxvpid", "on", "--vtxux", "on", "--biosbootmenu", "messageandmenu", "--rtcuseutc", "on", "--nictype1", "virtio", "--macaddress1", "auto"], ["sharedfolder", "add", "{{ .Name }}", "--name", "host.0", "--hostpath", "output/"]]
   vboxmanage_post          = [["modifyvm", "{{ .Name }}", "--macaddress1", "auto"], ["sharedfolder", "remove", "{{ .Name }}", "--name", "host.0"]]
-  vm_name                  = "archlinux.cloud-x86_64"
+  vm_name                  = "cloud_ready-x86_64"
 }
 
 
@@ -113,10 +113,10 @@ build {
     timeout      = "10s"
     max_retries  = 20
     inline = [
-      "while ! [ -f /cidata_archlinux ]; do",
+      "while ! [ -f /cidata_cloud_ready ]; do",
       "  sleep 17",
       "done",
-      "while ! grep \"provision_complete\" /cidata_archlinux; do",
+      "while ! grep \"provision_complete\" /cidata_cloud_ready; do",
       "  sleep 17",
       "done"
     ]
@@ -124,17 +124,17 @@ build {
 
   provisioner "shell-local" {
     inline = [<<EOS
-tee output/archlinux/archlinux.cloud-x86_64.run.sh <<EOF
+tee output/cloud_ready/cloud_ready-x86_64.run.sh <<EOF
 #!/usr/bin/env bash
 trap "trap - SIGTERM && kill -- -\$\$" SIGINT SIGTERM EXIT
 mkdir -p "/tmp/swtpm.0" "share"
 /usr/bin/swtpm socket --tpm2 --tpmstate dir="/tmp/swtpm.0" --ctrl type=unixio,path="/tmp/swtpm.0/vtpm.sock" &
 /usr/bin/qemu-system-x86_64 \\
-  -name archlinux.cloud-x86_64 \\
+  -name cloud_ready-x86_64 \\
   -machine type=q35,accel=kvm \\
   -vga virtio \\
   -cpu host \\
-  -drive file=archlinux.cloud-x86_64.qcow2,if=virtio,cache=writeback,discard=unmap,detect-zeroes=unmap,format=qcow2 \\
+  -drive file=cloud_ready-x86_64.qcow2,if=virtio,cache=writeback,discard=unmap,detect-zeroes=unmap,format=qcow2 \\
   -device tpm-tis,tpmdev=tpm0 -tpmdev emulator,id=tpm0,chardev=vtpm -chardev socket,id=vtpm,path=/tmp/swtpm.0/vtpm.sock \\
   -drive file=/usr/share/OVMF/x64/OVMF_CODE.secboot.4m.fd,if=pflash,unit=0,format=raw,readonly=on \\
   -drive file=efivars.fd,if=pflash,unit=1,format=raw \\
@@ -146,7 +146,7 @@ mkdir -p "/tmp/swtpm.0" "share"
   -rtc base=utc,clock=host
 EOF
 # -display none, -daemonize, hostfwd=::12345-:22 for running as a daemonized server
-chmod +x output/archlinux/archlinux.cloud-x86_64.run.sh
+chmod +x output/cloud_ready/cloud_ready-x86_64.run.sh
 EOS
     ]
     only_on = ["linux"]

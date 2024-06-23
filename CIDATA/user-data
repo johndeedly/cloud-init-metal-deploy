@@ -165,8 +165,10 @@ write_files:
         exit 0
       fi
 
-      CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.tar.xz' \) | head -1)
-      if [ -e /dev/sda ]; then
+      CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -1)
+      if [ -e /dev/md/os ]; then
+        TARGET_DEVICE="/dev/md/os"
+      elif [ -e /dev/sda ]; then
         TARGET_DEVICE="/dev/sda"
       elif [ -e /dev/vda ]; then
         TARGET_DEVICE="/dev/vda"
@@ -211,6 +213,7 @@ write_files:
         sync
         umount -l /mnt
       elif [ "${ROOT_PART[2]}" == "ext4" ] || [ "${ROOT_PART[2]}" == "EXT4" ]; then
+        e2fsck -y -f "${ROOT_PART[0]}"
         resize2fs "${ROOT_PART[0]}"
       fi
 
@@ -229,13 +232,17 @@ write_files:
         name "${EFI_PART[0]}" efi
       efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI || true
 
-      # configure logging to tty1 for archlinux
+      # configure grub boot
       mount "${ROOT_PART[0]}" /mnt
-      sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="console=tty1 loglevel=3 rw acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
-      sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/g' /mnt/etc/default/grub
-      sed -i 's/^GRUB_TERMINAL=/#GRUB_TERMINAL=/g' /mnt/etc/default/grub
-      sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
-      arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+      if [ -e /mnt/boot/grub/grub.cfg ]; then
+        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="console=tty1 loglevel=3 rw acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
+        sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/g' /mnt/etc/default/grub
+        sed -i 's/^GRUB_TERMINAL=/#GRUB_TERMINAL=/g' /mnt/etc/default/grub
+        sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
+        if [ -e /mnt/bin/grub-mkconfig ]; then
+          arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+        fi
+      fi
 
       # config files for network
       mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/

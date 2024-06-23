@@ -25,10 +25,10 @@ bootcmd:
   - loadkeys de-latin1
 
 ### update hostname
-hostname: archlinux
+hostname: cloud-ready
 create_hostname_file: true
 # https://www.icann.org/en/public-comment/proceeding/proposed-top-level-domain-string-for-private-use-24-01-2024
-fqdn: archlinux.internal
+fqdn: cloud-ready.internal
 prefer_fqdn_over_hostname: true
 
 write_files:
@@ -105,17 +105,40 @@ write_files:
       
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install locales keyboard-configuration console-setup tzdata
+      fi
+
       # Generate locales
-      sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
-      echo "LANG=de_DE.UTF-8" > /etc/locale.conf
-      locale-gen
+      if [ -e /bin/apt ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        dpkg-reconfigure --frontend=noninteractive locales
+        update-locale LANG=de_DE.UTF-8
+      elif [ -e /bin/pacman ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        locale-gen
+      fi
       
       # Configure timezone
-      rm /etc/localtime || true
-      ln -s /usr/share/zoneinfo/CET /etc/localtime
-
-      # Configure keyboard
-      loadkeys de-latin1 || true
+      if [ -e /bin/apt ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
+        dpkg-reconfigure --frontend=noninteractive tzdata
+      elif [ -e /bin/pacman ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
+      fi
+      
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        dpkg-reconfigure --frontend=noninteractive keyboard-configuration
+        dpkg-reconfigure --frontend=noninteractive console-setup
+      elif [ -e /bin/pacman ]; then
+        loadkeys de-latin1 || true
+      fi
     
       sleep 1
 
@@ -123,19 +146,23 @@ write_files:
       echo "boot_complete" > /cidata_boot
     owner: 'root:root'
     permissions: '0755'
-  - path: /var/lib/cloud/scripts/per-boot/10_archlinux.sh
+  - path: /var/lib/cloud/scripts/per-boot/10_cloud_ready.sh
     content: |
       #!/usr/bin/env bash
 
       # prevent bootcmd from running multiple times
-      if [ -f /cidata_archlinux ]; then
+      if [ -f /cidata_cloud_ready ]; then
         exit 0
       fi
-      touch /cidata_archlinux
+      touch /cidata_cloud_ready
       
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
-      LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
+      elif [ -e /bin/pacman ]; then
+        LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
+      fi
 
       if [ -d /install ] && [ -e /install/* ]; then
         for file in /install/*.sh; do
@@ -147,6 +174,6 @@ write_files:
       touch /etc/cloud/cloud-init.disabled
 
       # write status
-      echo "provision_complete" > /cidata_archlinux
+      echo "provision_complete" > /cidata_cloud_ready
     owner: 'root:root'
     permissions: '0755'
