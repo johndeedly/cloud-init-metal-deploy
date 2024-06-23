@@ -250,6 +250,10 @@ write_files:
       cp /etc/default/locale /mnt/etc/default/locale || true        
       cp /etc/timezone /mnt/etc/timezone || true
       cp /etc/vconsole.conf /mnt/etc/vconsole.conf || true
+
+      # script files
+      rsync -a /iso/install/* /mnt/install/
+      find /mnt/install -type f -name "*.sh" -exec chmod +x {} ;
       
       # finalize /mnt
       sync
