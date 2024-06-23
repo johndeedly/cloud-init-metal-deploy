@@ -137,7 +137,7 @@ write_files:
       
       LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
 
-      if [ -d /install ]; then
+      if [ -d /install ] && [ -e /install/* ]; then
         for file in /install/*.sh; do
           bash "$file" || exit 1
         done

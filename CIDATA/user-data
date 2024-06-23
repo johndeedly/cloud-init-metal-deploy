@@ -252,9 +252,11 @@ write_files:
       cp /etc/vconsole.conf /mnt/etc/vconsole.conf || true
 
       # script files
-      rsync -a /iso/install/* /mnt/install/
-      find /mnt/install -type f -name "*.sh" -exec chmod +x {} ;
-      
+      if [ -e /iso/install/* ]; then
+        rsync -a /iso/install/* /mnt/install/
+        find /mnt/install -type f -name "*.sh" -exec chmod +x {} ;
+      fi
+
       # finalize /mnt
       sync
       umount -l /mnt
