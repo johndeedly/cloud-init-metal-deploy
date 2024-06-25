@@ -113,6 +113,30 @@ build {
     timeout      = "10s"
     max_retries  = 20
     inline = [
+      "while ! [ -f /cidata_provision_system ]; do",
+      "  sleep 17",
+      "done",
+      "while ! grep \"provision_complete\" /cidata_provision_system; do",
+      "  sleep 17",
+      "done"
+    ]
+  }
+
+  provisioner "shell" {
+    pause_before = "10s"
+    timeout      = "10s"
+    max_retries  = 20
+    inline = [
+      "systemctl reboot"
+    ]
+    only    = ["qemu.default"]
+  }
+
+  provisioner "shell" {
+    pause_before = "10s"
+    timeout      = "10s"
+    max_retries  = 20
+    inline = [
       "while ! [ -f /cidata_cloud_ready ]; do",
       "  sleep 17",
       "done",
@@ -120,6 +144,7 @@ build {
       "  sleep 17",
       "done"
     ]
+    only    = ["qemu.default"]
   }
 
   provisioner "shell-local" {

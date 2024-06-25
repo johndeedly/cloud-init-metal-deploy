@@ -293,9 +293,9 @@ write_files:
       sleep 5
 
       # write status
-      echo "provisioning_completed" > /cidata_provision_system
+      echo "provision_complete" > /cidata_provision_system
 
       # reboot system
-      ( ( sleep 15 && systemctl reboot ) & )
+      ( ( sleep 10 && echo "[ OK ] Please remove the install medium and reboot the system" ) & )
     owner: 'root:root'
     permissions: '0755'
