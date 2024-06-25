@@ -92,6 +92,24 @@ write_files:
       FONT=Lat2-Terminus16
     owner: 'root:root'
     permissions: '0644'
+  # Debian/Ubuntu additional keyboard config
+  - path: /etc/default/keyboard
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  # Debian/Ubuntu patched out systemd vconsole setup for some reason... thanks for nothing
+  - path: /etc/default/console-setup
+    content: |
+      CHARMAP="UTF-8"
+      CODESET="Lat2"
+      FONTFACE="Terminus"
+      FONTSIZE="16"
+    owner: 'root:root'
+    permissions: '0644'
   # first boot commands (originally spread over bootcmd and runcmd)
   - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
     content: |
@@ -164,7 +182,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
       fi
 
-      if [ -d /install ] && [ -e /install/* ]; then
+      if [ -d /install ] && [ -n "$(ls -A /install/)" ]; then
         for file in /install/*.sh; do
           bash "$file" || exit 1
         done
