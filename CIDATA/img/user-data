@@ -182,7 +182,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
       fi
 
-      if [ -d /install ] && [ -n "$(ls -A /install/)" ]; then
+      if [ -d /install ] && [ -n "$(ls /install/)" ]; then
         for file in /install/*.sh; do
           bash "$file" || exit 1
         done
