@@ -127,6 +127,8 @@ write_files:
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install locales keyboard-configuration console-setup tzdata
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum install -y glibc-common glibc-locale-source glibc-langpack-de
       fi
 
       # Generate locales
@@ -138,6 +140,10 @@ write_files:
         sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
         echo "LANG=de_DE.UTF-8" > /etc/locale.conf
         locale-gen
+      elif [ -e /bin/yum ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        localedef -c -i de_DE -f UTF-8 de_DE.UTF-8
       fi
       
       # Configure timezone
@@ -148,6 +154,9 @@ write_files:
       elif [ -e /bin/pacman ]; then
         rm /etc/localtime || true
         ln -s /usr/share/zoneinfo/CET /etc/localtime
+      elif [ -e /bin/yum ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
       fi
       
       # Configure keyboard and console
@@ -156,6 +165,48 @@ write_files:
         dpkg-reconfigure --frontend=noninteractive console-setup
       elif [ -e /bin/pacman ]; then
         loadkeys de-latin1 || true
+      elif [ -e /bin/yum ]; then
+        loadkeys de-latin1 || true
+      fi
+
+      # Configure (virtual) environment
+      VIRT_ENV=$(systemd-detect-virt)
+      if [ -e /bin/apt ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install qemu-guest-agent
+            ;;
+          oracle)
+            tee -a /etc/apt/sources.list <<EOF
+      
+      # Debian Unstable "Sid"
+      deb http://deb.debian.org/debian/ sid main contrib non-free
+      EOF
+            tee /etc/apt/preferences.d/sid_priority <<EOF
+      Package: *
+      Pin: release a=sid
+      Pin-Priority: -1
+      EOF
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -t sid virtualbox-guest-x11 virtualbox-guest-dkms
+            ;;
+        esac
+      elif [ -e /bin/pacman ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm qemu-guest-agent
+            ;;
+          oracle)
+            LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm virtualbox-guest-utils
+            systemctl enable vboxservice.service
+            ;;
+        esac
+      elif [ -e /bin/yum ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C yum install -y qemu-guest-agent
+            ;;
+        esac
       fi
     
       sleep 1
@@ -176,20 +227,15 @@ write_files:
       
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      # system upgrade
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum check-update
+        LC_ALL=C yes | LC_ALL=C yum update
       fi
-
-      if [ -d /install ] && [ -n "$(ls /install/)" ]; then
-        for file in /install/*.sh; do
-          bash "$file" || exit 1
-        done
-      fi
-
-      # disable cloud-init on future startups
-      touch /etc/cloud/cloud-init.disabled
 
       # write status
       echo "provision_complete" > /cidata_cloud_ready
