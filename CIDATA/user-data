@@ -167,7 +167,7 @@ write_files:
       LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs qemu-base libisoburn
 
       # search for the CIDATA drive or partition and mount it
-      CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/iso9660/I!d' | head -1 | cut -d' ' -f1)
+      CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/iso9660/I!d' | head -n1 | cut -d' ' -f1)
 
       # mount step
       if [ -z "$CIDATA_DEVICE" ]; then
@@ -183,7 +183,7 @@ write_files:
         exit 0
       fi
 
-      CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -1)
+      CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
       if [ -e /dev/md/os ]; then
         TARGET_DEVICE="/dev/md/os"
       elif [ -e /dev/sda ]; then
@@ -213,7 +213,7 @@ write_files:
 
       # resize main ext4/btrfs partition
       # create cidata partition at the end of the disk
-      ROOT_PART=( $(lsblk -no PATH,PARTN,FSTYPE "${TARGET_DEVICE}" | sed -e '/\(ext4\|EXT4\|btrfs\|BTRFS\)/!d' | head -1) )
+      ROOT_PART=( $(lsblk -no PATH,PARTN,PARTLABEL,LABEL,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
       echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
         name "${ROOT_PART[1]}" root \
@@ -241,8 +241,8 @@ write_files:
       mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config ::
       
       # bootable system
-      BIOS_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/BIOS/I!d' | head -1) )
-      EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -1) )
+      BIOS_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/BIOS/I!d' | head -n1) )
+      EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -n1) )
       echo "BIOS: ${TARGET_DEVICE}, partition ${BIOS_PART[0]}"
       echo "EFI: ${TARGET_DEVICE}, partition ${EFI_PART[0]}"
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
@@ -250,18 +250,9 @@ write_files:
         name "${EFI_PART[0]}" efi
       efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI || true
 
-      # configure grub boot
+      # mount detected root filesystem
       mount "${ROOT_PART[0]}" /mnt
-      if [ -e /mnt/boot/grub/grub.cfg ]; then
-        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="console=tty1 loglevel=3 rw acpi=force acpi_osi=Linux"/g' /mnt/etc/default/grub
-        sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/g' /mnt/etc/default/grub
-        sed -i 's/^GRUB_TERMINAL=/#GRUB_TERMINAL=/g' /mnt/etc/default/grub
-        sed -i 's/^GRUB_SERIAL_COMMAND=/#GRUB_SERIAL_COMMAND=/g' /mnt/etc/default/grub
-        if [ -e /mnt/bin/grub-mkconfig ]; then
-          arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-        fi
-      fi
-
+      
       # config files for network
       mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
       cp /etc/systemd/network/20-wired.network /mnt/etc/systemd/network/20-wired.network || true
@@ -278,18 +269,12 @@ write_files:
       cp /etc/default/keyboard /mnt/etc/default/keyboard || true
       cp /etc/default/console-setup /mnt/etc/default/console-setup || true
 
-      # script files
-      if [ -n "$(ls /iso/install/)" ]; then
-        rsync -a /iso/install/* /mnt/install/
-        find /mnt/install -type f -name "*.sh" -exec chmod +x {} ;
-      fi
-
       # finalize /mnt
       sync
       umount -l /mnt
       
       sleep 1
-      lsblk -o +LABEL,PARTLABEL,FSTYPE "${TARGET_DEVICE}"
+      lsblk -o +LABEL,PARTLABEL,FSTYPE,PARTTYPENAME "${TARGET_DEVICE}"
       sleep 5
 
       # write status
