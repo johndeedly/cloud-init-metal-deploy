@@ -237,6 +237,21 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum update
       fi
 
+      # enable cockpit
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install cockpit cockpit-storaged cockpit-packagekit
+        systemctl enable cockpit.socket
+      elif [ -e /bin/pacman ]; then
+        LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm cockpit cockpit-storaged cockpit-packagekit
+        systemctl enable cockpit.socket
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum install -y cockpit cockpit-storaged cockpit-packagekit
+        systemctl enable cockpit.socket
+      fi
+      ln -sfn /dev/null /etc/motd.d/cockpit
+      ln -sfn /dev/null /etc/issue.d/cockpit.issue
+      sed -i '/^root$/d' /etc/cockpit/disallowed-users
+
       # write status
       echo "provision_complete" > /cidata_cloud_ready
     owner: 'root:root'

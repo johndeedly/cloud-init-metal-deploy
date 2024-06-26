@@ -164,7 +164,7 @@ mkdir -p "/tmp/swtpm.0" "share"
   -drive file=/usr/share/OVMF/x64/OVMF_CODE.secboot.4m.fd,if=pflash,unit=0,format=raw,readonly=on \\
   -drive file=efivars.fd,if=pflash,unit=1,format=raw \\
   -smp ${var.cpu_cores},sockets=1,cores=${var.cpu_cores},maxcpus=${var.cpu_cores} -m ${var.memory}M \\
-  -netdev user,id=user.0 -device virtio-net,netdev=user.0 \\
+  -netdev user,id=user.0,hostfwd=tcp::9091-:9090 -device virtio-net,netdev=user.0 \\
   -audio driver=pa,model=hda,id=snd0 -device hda-output,audiodev=snd0 \\
   -virtfs local,path=share,mount_tag=host.0,security_model=mapped,id=host.0 \\
   -usbdevice mouse -usbdevice keyboard \\
