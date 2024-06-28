@@ -221,6 +221,32 @@ write_files:
             ;;
         esac
       fi
+
+      # modify grub
+      GRUB_GLOBAL_CMDLINE="console=tty1 rw loglevel=3 acpi=force acpi_osi=Linux"
+      GRUB_CFGS=( /etc/default/grub /etc/default/grub.d/* )
+      for cfg in "${GRUB_CFGS[@]}"; do
+        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="'"$GRUB_GLOBAL_CMDLINE"'"/' "$cfg" || true
+        sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/' "$cfg" || true
+      done
+      if [ -e /bin/apt ]; then
+        grub-mkconfig -o /boot/grub/grub.cfg
+        if [ -d /boot/efi/EFI/debian ]; then
+          grub-mkconfig -o /boot/efi/EFI/debian/grub.cfg
+        elif [ -d /boot/efi/EFI/ubuntu ]; then
+          grub-mkconfig -o /boot/efi/EFI/ubuntu/grub.cfg
+        fi
+      elif [ -e /bin/pacman ]; then
+        grub-mkconfig -o /boot/grub/grub.cfg
+        grub-mkconfig -o /efi/EFI/arch/grub.cfg
+      elif [ -e /bin/yum ]; then
+        grub2-editenv - set "kernelopts=$GRUB_GLOBAL_CMDLINE"
+        if [ -e /sbin/grubby ]; then
+          grubby --update-kernel=ALL --args="$GRUB_GLOBAL_CMDLINE"
+        fi
+        grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
+        grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg --update-bls-cmdline
+      fi
     
       sleep 1
 
