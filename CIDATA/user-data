@@ -269,6 +269,10 @@ write_files:
       cp /etc/default/keyboard /mnt/etc/default/keyboard || true
       cp /etc/default/console-setup /mnt/etc/default/console-setup || true
 
+      # improve boot time by not waiting for ntp
+      arch-chroot /mnt systemctl disable systemd-time-wait-sync.service
+      arch-chroot /mnt systemctl mask time-sync.target
+
       # finalize /mnt
       sync
       umount -l /mnt
