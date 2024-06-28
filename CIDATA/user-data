@@ -164,7 +164,7 @@ write_files:
         sleep 5
       done
 
-      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm wget cloud-utils libguestfs qemu-base libisoburn
+      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base
 
       # search for the CIDATA drive or partition and mount it
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/iso9660/I!d' | head -n1 | cut -d' ' -f1)
