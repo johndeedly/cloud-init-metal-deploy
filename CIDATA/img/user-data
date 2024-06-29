@@ -238,7 +238,6 @@ write_files:
         fi
       elif [ -e /bin/pacman ]; then
         grub-mkconfig -o /boot/grub/grub.cfg
-        grub-mkconfig -o /efi/EFI/arch/grub.cfg
       elif [ -e /bin/yum ]; then
         grub2-editenv - set "kernelopts=$GRUB_GLOBAL_CMDLINE"
         if [ -e /sbin/grubby ]; then
