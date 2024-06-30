@@ -238,7 +238,7 @@ write_files:
       # write the cidata iso to the cidata partition on disk
       dd if=/dev/zero of=/dev/disk/by-partlabel/cidata bs=1M count=2 iflag=fullblock status=progress
       mkfs.vfat -n CIDATA /dev/disk/by-partlabel/cidata
-      mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config ::
+      mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config /iso/img/install ::
       
       # bootable system
       BIOS_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/BIOS/I!d' | head -n1) )

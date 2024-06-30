@@ -275,6 +275,19 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum update
       fi
 
+      # search for additional userscripts 
+      CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)
+      mkdir -p /cidata
+      mount "$CIDATA_DEVICE" /cidata
+      if [ -d /cidata/install ] && [ -n "$(ls /cidata/install)" ]; then
+        for script in /cidata/install/*.sh; do
+          # create a fully logged in shell with all necessary systemd services attached
+          machinectl shell root@ /bin/bash "$script"
+        done
+      fi
+      umount -l /cidata
+      rm -r /cidata
+
       # enable cockpit
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install cockpit cockpit-storaged cockpit-packagekit
