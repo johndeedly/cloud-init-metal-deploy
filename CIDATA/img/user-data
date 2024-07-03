@@ -194,7 +194,7 @@ write_files:
       # Debian Unstable "Sid"
       deb http://deb.debian.org/debian/ sid main contrib non-free
       EOF
-              tee /etc/apt/preferences.d/sid_priority <<EOF
+              tee /etc/apt/preferences <<EOF
       Package: *
       Pin: release a=stable
       Pin-Priority: 700
