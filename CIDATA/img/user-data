@@ -194,30 +194,22 @@ write_files:
       # Debian Unstable "Sid"
       deb http://deb.debian.org/debian/ sid main contrib non-free
       EOF
-            tee /etc/apt/preferences.d/sid_priority <<EOF
+              tee /etc/apt/preferences.d/sid_priority <<EOF
       Package: *
       Pin: release a=stable
       Pin-Priority: 700
-      
-      Package: *
-      Pin: release a=stable-updates
-      Pin-Priority: 700
-      
+
       Package: *
       Pin: release a=testing
-      Pin-Priority: 500
-      
-      Package: *
-      Pin: release a=testing-updates
-      Pin-Priority: 500
-      
+      Pin-Priority: 650
+
       Package: *
       Pin: release a=sid
-      Pin-Priority: 300
-      
+      Pin-Priority: 600
+
       Package: *
       Pin: release a=unstable
-      Pin-Priority: 300
+      Pin-Priority: 600
       EOF
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -y -t sid virtualbox-guest-x11
