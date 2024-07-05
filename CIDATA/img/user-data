@@ -271,7 +271,7 @@ write_files:
       # system upgrade
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install systemd-containerd
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install systemd-container
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
         LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 3056513887B78AEB
@@ -282,11 +282,10 @@ write_files:
       Include = /etc/pacman.d/chaotic-mirrorlist
       EOF
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
-        LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm systemd-containerd
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum check-update
         LC_ALL=C yes | LC_ALL=C yum update
-        LC_ALL=C yes | LC_ALL=C yum install -y systemd-containerd
+        LC_ALL=C yes | LC_ALL=C yum install -y systemd-container
       fi
 
       # search for additional userscripts 
