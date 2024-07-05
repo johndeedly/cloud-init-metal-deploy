@@ -207,6 +207,8 @@ write_files:
       EOF
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -y -t sid virtualbox-guest-x11
+            elif grep -q Ubuntu /proc/version; then
+              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -y virtualbox-guest-x11
             fi
             ;;
         esac
