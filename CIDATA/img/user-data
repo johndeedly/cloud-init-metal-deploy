@@ -127,12 +127,14 @@ write_files:
         for cfg in "${APT_CFGS[@]}"; do
           sed -i 's/^Acquire::http::Dl-Limit/\/\/Acquire::http::Dl-Limit/' "$cfg" || true
         done
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install eatmydata
       fi
 
       # Configure keyboard and console
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install locales keyboard-configuration console-setup console-data tzdata
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install locales keyboard-configuration console-setup console-data tzdata
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum install -y glibc-common glibc-locale-source glibc-langpack-de
       fi
@@ -187,7 +189,7 @@ write_files:
       if [ -e /bin/apt ]; then
         case $VIRT_ENV in
           qemu | kvm)
-            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install qemu-guest-agent
             ;;
           oracle)
             if grep -q Debian /proc/version; then
@@ -214,9 +216,9 @@ write_files:
       Pin-Priority: 600
       EOF
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
-              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -y -t sid virtualbox-guest-x11
+              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install -t sid virtualbox-guest-x11
             elif grep -q Ubuntu /proc/version; then
-              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install -y virtualbox-guest-x11
+              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install virtualbox-guest-x11
             fi
             ;;
         esac
@@ -282,7 +284,7 @@ write_files:
       # system upgrade
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install systemd-container
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install systemd-container
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
         LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 3056513887B78AEB
@@ -301,7 +303,7 @@ write_files:
 
       # install basic packages
       if [ -e /bin/apt ]; then
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install \
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           systemd-homed \
           doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
           bash-completion ncdu pv mc lfm fzf \
@@ -364,7 +366,7 @@ write_files:
 
       # enable cockpit
       if [ -e /bin/apt ]; then
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install cockpit cockpit-storaged cockpit-packagekit
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install cockpit cockpit-storaged cockpit-packagekit
         systemctl enable cockpit.socket
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm cockpit cockpit-storaged cockpit-packagekit
