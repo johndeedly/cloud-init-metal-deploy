@@ -121,10 +121,18 @@ write_files:
 
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      # speedup apt on ubuntu and debian
+      if [ -e /bin/apt ]; then
+        APT_CFGS=( /etc/apt/apt.conf.d/* )
+        for cfg in "${APT_CFGS[@]}"; do
+          sed -i 's/^Acquire::http::Dl-Limit/\/\/Acquire::http::Dl-Limit/' "$cfg" || true
+        done
+      fi
+
       # Configure keyboard and console
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
-        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install locales keyboard-configuration console-setup console-data tzdata
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install locales keyboard-configuration console-setup console-data tzdata
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum install -y glibc-common glibc-locale-source glibc-langpack-de
       fi
@@ -179,7 +187,7 @@ write_files:
       if [ -e /bin/apt ]; then
         case $VIRT_ENV in
           qemu | kvm)
-            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt install qemu-guest-agent
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
             ;;
           oracle)
             if grep -q Debian /proc/version; then
@@ -290,6 +298,56 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum update
         LC_ALL=C yes | LC_ALL=C yum install -y systemd-container
       fi
+
+      # install basic packages
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install \
+          systemd-homed \
+          doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          bash-completion ncdu pv mc lfm fzf \
+          lshw libxml2 jq polkitd man manpages-de trash-cli \
+          openssh-server openssh-client wireguard-tools nfs-kernel-server \
+          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+      elif [ -e /bin/pacman ]; then
+        LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
+          pacman-contrib \
+          doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          bash-completion ncdu pv mc lf fzf \
+          lshw libxml2 jq polkit core/man man-pages-de trash-cli \
+          openssh wireguard-tools nfs-utils \
+          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum install -y \
+          systemd-homed \
+          curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          bash-completion mc \
+          lshw libxml2 jq polkit man-db \
+          openssh wireguard-tools nfs-utils \
+          cifs-utils unzip rsync xdg-user-dirs xdg-utils
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+      fi
+
+      # disable hibernation and hybrid-sleep modes
+      cp /etc/systemd/logind.conf /etc/systemd/logind.conf.bak
+      sed -i 's/^#\?HandlePowerKey=.*/HandlePowerKey=poweroff/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandlePowerKeyLongPress=.*/HandlePowerKeyLongPress=poweroff/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleRebootKey=.*/HandleRebootKey=reboot/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleRebootKeyLongPress=.*/HandleRebootKeyLongPress=poweroff/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleSuspendKey=.*/HandleSuspendKey=suspend/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleSuspendKeyLongPress=.*/HandleSuspendKeyLongPress=poweroff/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleHibernateKey=.*/HandleHibernateKey=suspend/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleHibernateKeyLongPress=.*/HandleHibernateKeyLongPress=poweroff/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleLidSwitch=.*/HandleLidSwitch=suspend/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleLidSwitchExternalPower=.*/HandleLidSwitchExternalPower=suspend/' /etc/systemd/logind.conf
+      sed -i 's/^#\?HandleLidSwitchDocked=.*/HandleLidSwitchDocked=ignore/' /etc/systemd/logind.conf
+      cp /etc/systemd/sleep.conf /etc/systemd/sleep.conf.bak
+      sed -i 's/^#\?AllowSuspend=.*/AllowSuspend=yes/' /etc/systemd/sleep.conf
+      sed -i 's/^#\?AllowHibernation=.*/AllowHibernation=no/' /etc/systemd/sleep.conf
+      sed -i 's/^#\?AllowSuspendThenHibernate=.*/AllowSuspendThenHibernate=no/' /etc/systemd/sleep.conf
+      sed -i 's/^#\?AllowHybridSleep=.*/AllowHybridSleep=no/' /etc/systemd/sleep.conf
+      systemctl mask hibernate.target suspend-then-hibernate.target hybrid-sleep.target
 
       # search for additional userscripts 
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)
