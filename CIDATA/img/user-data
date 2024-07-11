@@ -114,6 +114,178 @@ write_files:
       FONTSIZE="16"
     owner: 'root:root'
     permissions: '0644'
+  - path: /etc/skel/.bash_profile
+    content: |
+      [[ -f /etc/bash.bashrc ]] && source /etc/bash.bashrc
+
+      [[ -f ~/.bashrc ]] && source ~/.bashrc
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.bashrc
+    content: |
+      # general global definitions
+      export EDITOR=nano
+      export DOTNET_CLI_TELEMETRY_OPTOUT=1
+      export WINEPREFIX="$HOME/.local/wine"
+      export WINEDEBUG=fixme-all,warn-all,err-all
+
+      # append dotnet tools to user paths
+      if ! [[ "$PATH" =~ ":$HOME/.dotnet/tools" ]]; then
+        export PATH="$PATH:$HOME/.dotnet/tools"
+      fi
+
+      # append local bin to user paths
+      if ! [[ "$PATH" =~ ":$HOME/.local/bin" ]]; then
+        export PATH="$PATH:$HOME/.local/bin"
+      fi
+
+      # append sbin to user paths #1
+      if ! [[ "$PATH" =~ ":/sbin" ]]; then
+        export PATH="$PATH:/sbin"
+      fi
+
+      # append sbin to user paths #2
+      if ! [[ "$PATH" =~ ":/usr/sbin" ]]; then
+        export PATH="$PATH:/usr/sbin"
+      fi
+
+      # append sbin to user paths #3
+      if ! [[ "$PATH" =~ ":/usr/local/sbin" ]]; then
+        export PATH="$PATH:/usr/local/sbin"
+      fi
+
+      # include XDG homedirs
+      if [ -f "$HOME/.config/user-dirs.dirs" ]; then
+        source "$HOME/.config/user-dirs.dirs"
+      fi
+
+      function fasthash() {
+        if test -n "$1"; then
+          # parameter(s) given
+          while (( "$#" )); do
+            if [ -d "$1" ]; then
+              # is directory
+              echo -e "$(find "$1" -type f -xtype f -print0 \
+                | sort -z | xargs -0 -I {} pv {} | gzip -c \
+                | tail -c8 | od -t x4 -N 4 -A n \
+                | xargs)\t$(realpath "$1")/*"
+            elif [ -f "$1" ]; then
+              # is file
+              echo -e "$(pv "$1" \
+                | gzip -c | tail -c8 | od -t x4 -N 4 -A n \
+                | xargs)\t$(realpath "$1")"
+            else
+              # is string
+              echo -e "$(echo -en "$1" \
+                | gzip -c | tail -c8 | od -t x4 -N 4 -A n \
+                | xargs)\t\"$(printf "%q" "$1")\""
+            fi
+            shift
+          done
+        elif test ! -t 0; then
+          # read from stdin
+          echo -e "$(cat - | pv \
+            | gzip -c | tail -c8 | od -t x4 -N 4 -A n \
+            | xargs)\t-"
+        else
+          echo "no data" 1>&2
+        fi
+      }
+      export -f fasthash
+
+      # configure completion for doas
+      complete -F _root_command doas
+      complete -F _longopt ls
+      complete -F _longopt ll
+      complete -F _longopt la
+      complete -F _longopt diff
+      complete -F _longopt grep
+      complete -F _longopt trash
+      complete -F _longopt trashdir
+      complete -F _longopt du
+      complete -F _longopt ncdu
+
+      # alias and color stuff
+      function ls() {
+          command ls --color=auto "$@"
+      }
+      export -f ls
+
+      function ll() {
+          command ls -l --color=auto "$@"
+      }
+      export -f ll
+
+      function la() {
+          command ls -la --color=auto "$@"
+      }
+      export -f la
+
+      function diff() {
+          command diff --color=auto "$@"
+      }
+      export -f diff
+
+      function grep() {
+          command grep --color=auto "$@"
+      }
+      export -f grep
+
+      function ip() {
+          command ip -color=auto "$@"
+      }
+      export -f ip
+
+      function cifscopy() {
+          command rsync -rtvus --size-only --stats --no-links --progress "$@"
+      }
+      export -f cifscopy
+
+      function du() {
+          command ncdu "$@"
+      }
+      export -f du
+
+      # using starship when supported
+      if [[ "${TERM}" =~ "xterm" ]] || [[ "${TERM}" =~ "linux" ]] || [[ "${TERM}" =~ "kitty" ]]; then
+        [ -f /bin/starship ] && eval "$(starship init bash)"
+      else
+        if [[ $(id -u) -eq 0 ]]; then
+          PS1='${?#0}\[\e[;31m\][\u@\h \W]\$\[\e[m\] '
+        else
+          PS1='${?#0}\[\e[;32m\][\u@\h \W]\$\[\e[m\] '
+        fi
+      fi
+
+    owner: 'root:root'
+    permissions: '0644'
+  - path:
+    content: |
+      add_newline = false
+
+      [character]
+      success_symbol = "[➜](bold green)"
+      error_symbol = "[✗](bold red)"
+
+      [directory]
+      fish_style_pwd_dir_length = 1
+      format = " in [$path]($style)[$read_only]($read_only_style) "
+      truncation_length = 1
+
+      [hostname]
+      format = " on [$hostname]($style)"
+
+      [dotnet]
+      symbol = "👾 "
+
+      [python]
+      python_binary = "python3"
+
+      [username]
+      format = "[$user]($style)"
+      show_always = true
+    owner: 'root:root'
+    permissions: '0644'
   # first boot commands (originally spread over bootcmd and runcmd)
   - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
     content: |
