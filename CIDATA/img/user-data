@@ -259,33 +259,6 @@ write_files:
 
     owner: 'root:root'
     permissions: '0644'
-  - path:
-    content: |
-      add_newline = false
-
-      [character]
-      success_symbol = "[➜](bold green)"
-      error_symbol = "[✗](bold red)"
-
-      [directory]
-      fish_style_pwd_dir_length = 1
-      format = " in [$path]($style)[$read_only]($read_only_style) "
-      truncation_length = 1
-
-      [hostname]
-      format = " on [$hostname]($style)"
-
-      [dotnet]
-      symbol = "👾 "
-
-      [python]
-      python_binary = "python3"
-
-      [username]
-      format = "[$user]($style)"
-      show_always = true
-    owner: 'root:root'
-    permissions: '0644'
   # first boot commands (originally spread over bootcmd and runcmd)
   - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
     content: |
