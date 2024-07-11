@@ -496,6 +496,16 @@ write_files:
       sed -i 's/^#\?AllowHybridSleep=.*/AllowHybridSleep=no/' /etc/systemd/sleep.conf
       systemctl mask hibernate.target suspend-then-hibernate.target hybrid-sleep.target
 
+      # apply skeleton to all users
+      getent passwd | while IFS=: read -r username x uid gid gecos home shell; do
+        if [ -n "$home" ] && [ -d "$home" ] && [ "$home" != "/" ]; then
+          if [ "$uid" -eq 0 ] || [ "$uid" -ge 1000 ]; then
+            echo ":: apply skeleton to $home [$username $uid:$gid]"
+            rsync -a --chown=$uid:$gid /etc/skel/ "$home"
+          fi
+        fi
+      done
+
       # search for additional userscripts 
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)
       mkdir -p /cidata
