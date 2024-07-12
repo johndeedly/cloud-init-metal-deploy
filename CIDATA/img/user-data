@@ -246,10 +246,14 @@ write_files:
       }
       export -f du
 
-      if [ $(id -u) -eq 0 ]; then
-        PS1='\[\e[;31m\][\u@\h \W]\$\[\e[m\]${?#0} '
+      if command -v starship >/dev/null; then
+        eval "$(starship init bash)"
       else
-        PS1='\[\e[;32m\][\u@\h \W]\$\[\e[m\]${?#0} '
+        if [ $(id -u) -eq 0 ]; then
+          PS1='\[\e[;31m\][\u@\h \W]\$\[\e[m\]${?#0} '
+        else
+          PS1='\[\e[;32m\][\u@\h \W]\$\[\e[m\]${?#0} '
+        fi
       fi
     owner: 'root:root'
     permissions: '0644'
@@ -305,6 +309,33 @@ write_files:
       right_meters=Tasks LoadAverage Uptime
       right_meter_modes=2 2 2
       hide_function_bar=0
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/starship.toml
+    content: |
+      add_newline = false
+
+      [character]
+      success_symbol = "[➜](bold green)"
+      error_symbol = "[✗](bold red)"
+
+      [directory]
+      fish_style_pwd_dir_length = 1
+      format = " in [$path]($style)[$read_only]($read_only_style) "
+      truncation_length = 1
+
+      [hostname]
+      format = " on [$hostname]($style)"
+
+      [dotnet]
+      symbol = "👾 "
+
+      [python]
+      python_binary = "python3"
+
+      [username]
+      format = "[$user]($style)"
+      show_always = true
     owner: 'root:root'
     permissions: '0644'
   - path: /etc/skel/.config/powershell/Microsoft.PowerShell_profile.ps1
@@ -494,10 +525,27 @@ write_files:
       EOF
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
       elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C dnf install epel-release
+        LC_ALL=C yes | LC_ALL=C dnf upgrade
         LC_ALL=C yes | LC_ALL=C yum check-update
         LC_ALL=C yes | LC_ALL=C yum update
         LC_ALL=C yes | LC_ALL=C yum install -y systemd-container
       fi
+
+      download_starship() {
+        echo ":: download starship"
+        curl --fail --silent --location --output /tmp/starship-x86_64.tar.gz 'https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-musl.tar.gz'
+        curl --fail --silent --location --output /tmp/starship-x86_64.tar.gz.sha256 'https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-musl.tar.gz.sha256'
+        newhash=$(sha256sum /tmp/starship-x86_64.tar.gz | cut -d' ' -f1)
+        knownhash=$(cat /tmp/starship-x86_64.tar.gz.sha256)
+        if [ -n "$newhash" ] && [ "$newhash" == "$knownhash" ]; then
+          echo ":: correct hash, extract starship to /usr/local/bin/"
+          tar -xzof /tmp/starship-x86_64.tar.gz -C /usr/local/bin/
+          chmod 0755 /usr/local/bin/starship
+        else
+          echo "!! error installing starship: wrong hash. expected: $knownhash, got $newhash"
+        fi
+      }
 
       # install basic packages
       if [ -e /bin/apt ]; then
@@ -508,10 +556,11 @@ write_files:
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
+        download_starship
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-          pacman-contrib \
+          pacman-contrib starship \
           doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
           bash-completion ncdu pv mc lf fzf \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
@@ -520,13 +569,14 @@ write_files:
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum install -y \
-          systemd-homed \
+          systemd-networkd \
           curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
           bash-completion mc \
           lshw libxml2 jq polkit man-db \
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip rsync xdg-user-dirs xdg-utils
-        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+        download_starship
+        systemctl enable systemd-networkd systemd-resolved sshd firewalld
       fi
 
       # disable hibernation and hybrid-sleep modes
