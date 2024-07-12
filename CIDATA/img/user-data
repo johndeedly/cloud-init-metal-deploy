@@ -257,12 +257,6 @@ write_files:
       fi
     owner: 'root:root'
     permissions: '0644'
-  - path: /etc/skel/.nanorc
-    content: |
-      include /usr/share/nano/*.nanorc
-      include /usr/share/nano/extra/*.nanorc
-    owner: 'root:root'
-    permissions: '0644'
   - path: /etc/skel/.inputrc
     content: |
       set enable-keypad on
@@ -341,6 +335,283 @@ write_files:
   - path: /etc/skel/.config/powershell/Microsoft.PowerShell_profile.ps1
     content: |
       Invoke-Expression (&starship init powershell)
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/init.lua
+    content: |
+      vim.g.base46_cache = vim.fn.stdpath "data" .. "/nvchad/base46/"
+      vim.g.mapleader = " "
+
+      -- bootstrap lazy and all plugins
+      local lazypath = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
+
+      if not vim.loop.fs_stat(lazypath) then
+        local repo = "https://github.com/folke/lazy.nvim.git"
+        vim.fn.system { "git", "clone", "--filter=blob:none", repo, "--branch=stable", lazypath }
+      end
+
+      vim.opt.rtp:prepend(lazypath)
+
+      local lazy_config = require "configs.lazy"
+
+      -- load plugins
+      require("lazy").setup({
+        {
+          "NvChad/NvChad",
+          lazy = false,
+          branch = "v2.5",
+          import = "nvchad.plugins",
+          config = function()
+            require "options"
+          end,
+        },
+
+        { import = "plugins" },
+      }, lazy_config)
+
+      -- load theme
+      dofile(vim.g.base46_cache .. "defaults")
+      dofile(vim.g.base46_cache .. "statusline")
+
+      require "nvchad.autocmds"
+
+      vim.schedule(function()
+        require "mappings"
+      end)
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/chadrc.lua
+    content: |
+      ---@type ChadrcConfig
+      local M = {}
+
+      M.ui = {
+        theme = "catppuccin",
+
+        -- hl_override = {
+        -- 	Comment = { italic = true },
+        -- 	["@comment"] = { italic = true },
+        -- },
+      }
+
+      return M
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/mappings.lua
+    content: |
+      require "nvchad.mappings"
+
+      -- add yours here
+
+      local map = vim.keymap.set
+
+      map("n", ";", ":", { desc = "CMD enter command mode" })
+      map("i", "jk", "<ESC>")
+
+      -- map({ "n", "i", "v" }, "<C-s>", "<cmd> w <cr>")
+      map ("n", "<S-Left>", "<C-w>h", { desc = "Window left" })
+      map ("n", "<S-Right>", "<C-w>l", { desc = "Window right" })
+      map ("n", "<S-Down>", "<C-w>j", { desc = "Window down" })
+      map ("n", "<S-Up>", "<C-w>k", { desc = "Window up" })
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/options.lua
+    content: |
+      require "nvchad.options"
+
+      -- add yours here!
+
+      -- local o = vim.o
+      -- o.cursorlineopt ='both' -- to enable cursorline!
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/configs/conform.lua
+    content: |
+      local options = {
+        formatters_by_ft = {
+          lua = { "stylua" },
+          -- css = { "prettier" },
+          -- html = { "prettier" },
+        },
+
+        -- format_on_save = {
+        --   -- These options will be passed to conform.format()
+        --   timeout_ms = 500,
+        --   lsp_fallback = true,
+        -- },
+      }
+
+      require("conform").setup(options)
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/configs/lazy.lua
+    content: |
+      return {
+        defaults = { lazy = true },
+        install = { colorscheme = { "nvchad" } },
+
+        ui = {
+          icons = {
+            ft = "",
+            lazy = "󰂠 ",
+            loaded = "",
+            not_loaded = "",
+          },
+        },
+
+        performance = {
+          rtp = {
+            disabled_plugins = {
+              "2html_plugin",
+              "tohtml",
+              "getscript",
+              "getscriptPlugin",
+              "gzip",
+              "logipat",
+              "netrw",
+              "netrwPlugin",
+              "netrwSettings",
+              "netrwFileHandlers",
+              "matchit",
+              "tar",
+              "tarPlugin",
+              "rrhelper",
+              "spellfile_plugin",
+              "vimball",
+              "vimballPlugin",
+              "zip",
+              "zipPlugin",
+              "tutor",
+              "rplugin",
+              "syntax",
+              "synmenu",
+              "optwin",
+              "compiler",
+              "bugreport",
+              "ftplugin",
+            },
+          },
+        },
+      }
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/configs/lspconfig.lua
+    content: |
+      -- EXAMPLE 
+      local on_attach = require("nvchad.configs.lspconfig").on_attach
+      local on_init = require("nvchad.configs.lspconfig").on_init
+      local capabilities = require("nvchad.configs.lspconfig").capabilities
+
+      local lspconfig = require "lspconfig"
+      local servers = { "html", "cssls", "tsserver", "clangd", "omnisharp", "pyright", "dockerls", "texlab", "marksman" }
+
+      -- lsps with default config
+      for _, lsp in ipairs(servers) do
+        lspconfig[lsp].setup {
+          on_attach = on_attach,
+          on_init = on_init,
+          capabilities = capabilities,
+        }
+      end
+
+      -- typescript
+      lspconfig.tsserver.setup {
+        on_attach = on_attach,
+        on_init = on_init,
+        capabilities = capabilities,
+      }
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.config/nvim/lua/plugins/init.lua
+    content: |
+      return {
+        {
+          "stevearc/conform.nvim",
+          -- event = 'BufWritePre' -- uncomment for format on save
+          config = function()
+            require "configs.conform"
+          end,
+        },
+
+        {
+          "neovim/nvim-lspconfig",
+          config = function()
+            require("nvchad.configs.lspconfig").defaults()
+            require "configs.lspconfig"
+          end,
+        },
+
+        {
+          "williamboman/mason.nvim",
+          opts = {
+            ensure_installed = {
+              -- bash
+              "beautysh",
+              
+              -- dotnet
+              "omnisharp",
+              "netcoredbg",
+              "csharpier",
+              
+              -- python
+              "pyright",
+              "debugpy",
+              "pylint",
+              
+              -- docker
+              "dockerfile-language-server",
+              
+              -- latex
+              "texlab",
+              "latexindent",
+              
+              -- markdown
+              "marksman",
+              "markdownlint",
+
+              -- cpp
+              "clangd",
+              "cpplint",
+              
+              -- lua stuff
+              "lua-language-server",
+              "stylua",
+
+              -- web dev stuff
+              "css-lsp",
+              "htmlhint",
+              "html-lsp",
+              "typescript-language-server",
+              "deno",
+              "prettier",
+              "jsonlint",
+
+              -- c/cpp stuff
+              "clangd",
+              "clang-format"
+            },
+          },
+        },
+
+        {
+          "nvim-treesitter/nvim-treesitter",
+          opts = {
+            ensure_installed = {
+              "vim",
+              "lua",
+              "vimdoc",
+              "html",
+              "css",
+              "javascript",
+              "typescript",
+              "tsx",
+              "c",
+              "markdown",
+              "markdown_inline"
+            },
+          },
+        },
+      }
     owner: 'root:root'
     permissions: '0644'
   # first boot commands (originally spread over bootcmd and runcmd)
@@ -550,17 +821,17 @@ write_files:
       # install basic packages
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
-          systemd-homed \
+          systemd-homed build-essential \
           doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
           bash-completion ncdu pv mc lfm fzf \
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         download_starship
-        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-          pacman-contrib starship \
+          pacman-contrib starship base-devel \
           doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
           bash-completion ncdu pv mc lf fzf \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
@@ -568,6 +839,7 @@ write_files:
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
       elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum groupinstall -y 'Development Tools'
         LC_ALL=C yes | LC_ALL=C yum install -y \
           systemd-networkd \
           curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
@@ -599,6 +871,14 @@ write_files:
       sed -i 's/^#\?AllowHybridSleep=.*/AllowHybridSleep=no/' /etc/systemd/sleep.conf
       systemctl mask hibernate.target suspend-then-hibernate.target hybrid-sleep.target
 
+      echo ":: prepare NvChad environment"
+      mkdir -p /etc/skel/.local/share
+      echo ":: setup NvChad environment"
+      ( HOME=/etc/skel /bin/bash -c 'nvim -es -u "/etc/skel/.config/nvim/init.lua" -c ":Lazy sync | Lazy load all" -c ":MasonInstallAll" -c ":TSInstall all" -c ":qall!" || true' ) &
+      pid=$!
+      echo ":: wait for NvChad to finish"
+      wait $pid
+      
       # apply skeleton to all users
       getent passwd | while IFS=: read -r username x uid gid gecos home shell; do
         if [ -n "$home" ] && [ -d "$home" ] && [ "$home" != "/" ]; then
