@@ -813,36 +813,56 @@ write_files:
         fi
       }
 
+      download_neovim() {
+        echo ":: download nvim"
+        curl --fail --silent --location --output /tmp/nvim-x86_64.tar.gz 'https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz'
+        curl --fail --silent --location --output /tmp/nvim-x86_64.tar.gz.sha256 'https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz.sha256sum'
+        newhash=$(sha256sum /tmp/nvim-x86_64.tar.gz | cut -d' ' -f1)
+        knownhash=$(cat /tmp/nvim-x86_64.tar.gz.sha256 | cut -d' ' -f1)
+        if [ -n "$newhash" ] && [ "$newhash" == "$knownhash" ]; then
+          echo ":: correct hash, extract nvim to /usr/local/"
+          tar -xzof /tmp/nvim-x86_64.tar.gz -C /usr/local/ --strip-components 1
+          chmod 0755 /usr/local/bin/nvim
+        else
+          echo "!! error installing starship: wrong hash. expected: $knownhash, got $newhash"
+        fi
+      }
+
       # install basic packages
       if [ -e /bin/apt ]; then
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           systemd-homed build-essential \
-          doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          doas curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion ncdu pv mc lfm fzf \
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         download_starship
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
+          luajit libluajit-5.1-dev lua-mpack lua-lpeg libunibilium-dev libmsgpack-dev libtermkey-dev
+        download_neovim
         systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-          pacman-contrib starship base-devel \
-          doas curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          pacman-contrib starship base-devel neovim \
+          doas curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion ncdu pv mc lf fzf \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
       elif [ -e /bin/yum ]; then
-        # this is too much: LC_ALL=C yes | LC_ALL=C yum groupinstall -y 'Development Tools'
         LC_ALL=C yes | LC_ALL=C yum install -y \
-          systemd-networkd \
-          curl wget zstd rsyslog nano npm neovim htop btop git firewalld \
+          systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
+          curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion mc \
           lshw libxml2 jq polkit man-db \
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip rsync xdg-user-dirs xdg-utils
         download_starship
+        LC_ALL=C yes | LC_ALL=C yum install -y \
+          compat-lua-libs libtermkey libtree-sitter libvterm luajit luajit2.1-luv msgpack unibilium xsel
+        download_neovim
         systemctl enable systemd-networkd systemd-resolved sshd firewalld
       fi
 
