@@ -125,11 +125,6 @@ write_files:
       # Configure keyboard
       loadkeys de-latin1 || true
     
-      sleep 1
-
-      # write status
-      echo "boot_complete" > /cidata_firstboot
-
       # cleanup
       rm -- "${0}"
     owner: 'root:root'
@@ -138,12 +133,6 @@ write_files:
   - path: /var/lib/cloud/scripts/per-boot/10_provision_system.sh
     content: |
       #!/usr/bin/env bash
-      
-      # prevent bootcmd from running multiple times
-      if [ -f /cidata_provision_system ]; then
-        exit 0
-      fi
-      touch /cidata_provision_system
       
       exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
 
@@ -279,7 +268,7 @@ write_files:
       sleep 5
 
       # write status
-      echo "provision_complete" > /cidata_provision_system
+      echo ":: provisioning prepared"
 
       # reboot system
       ( ( sleep 10 && echo "[ OK ] Please remove the install medium and reboot the system" ) & )

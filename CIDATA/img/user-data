@@ -766,11 +766,6 @@ write_files:
         grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg --update-bls-cmdline
       fi
     
-      sleep 1
-
-      # write status
-      echo "boot_complete" > /cidata_firstboot
-
       # cleanup
       rm -- "${0}"
     owner: 'root:root'
@@ -921,7 +916,7 @@ write_files:
       sed -i '/^root$/d' /etc/cockpit/disallowed-users
 
       # write status
-      echo "provision_complete" > /cidata_cloud_ready
+      echo ":: provisioning completed"
 
       # done
       ( ( sleep 10 && echo "[ OK ] We are done here." ) & )

@@ -113,10 +113,10 @@ build {
     timeout      = "10s"
     max_retries  = 20
     inline = [
-      "while ! [ -f /cidata_provision_system ]; do",
+      "while ! [ -f /cidata_log ]; do",
       "  sleep 17",
       "done",
-      "while ! grep \"provision_complete\" /cidata_provision_system; do",
+      "while ! grep \":: provisioning prepared\" /cidata_log; do",
       "  sleep 17",
       "done"
     ]
@@ -137,10 +137,10 @@ build {
     timeout      = "10s"
     max_retries  = 20
     inline = [
-      "while ! [ -f /cidata_cloud_ready ]; do",
+      "while ! [ -f /cidata_log ]; do",
       "  sleep 17",
       "done",
-      "while ! grep \"provision_complete\" /cidata_cloud_ready; do",
+      "while ! grep \":: provisioning completed\" /cidata_log; do",
       "  sleep 17",
       "done"
     ]
