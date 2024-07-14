@@ -181,44 +181,85 @@ write_files:
         exit 0
       fi
       echo "CLOUD-IMAGE: ${CLOUD_IMAGE_PATH}, TARGET: ${TARGET_DEVICE}"
+
+      modprobe nbd max_part=8
+      qemu-nbd --connect=/dev/nbd0 --read-only "${CLOUD_IMAGE_PATH}"
+      partx -u /dev/nbd0
+      sleep 1
+
+      CLOUD_IMAGE_LAYOUT=$(fdisk /dev/nbd0 -l)
+      ROOT_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/root/I!d' | head -n1) )
+      BIOS_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/bios/I!d' | head -n1) )
+      EFI_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
+      ROOT_PART=( ${ROOT_FDISK[0]} $(expr ${ROOT_FDISK[1]} \* 512 / 1024) $(expr ${ROOT_FDISK[2]} \* 512 / 1024) $(expr \( ${ROOT_FDISK[2]} - ${ROOT_FDISK[1]} \) \* 512 / 1024) )
+      BIOS_PART=( ${BIOS_FDISK[0]} $(expr ${BIOS_FDISK[1]} \* 512 / 1024) $(expr ${BIOS_FDISK[2]} \* 512 / 1024) $(expr \( ${BIOS_FDISK[2]} - ${BIOS_FDISK[1]} \) \* 512 / 1024) )
+      EFI_PART=( ${EFI_FDISK[0]} $(expr ${EFI_FDISK[1]} \* 512 / 1024) $(expr ${EFI_FDISK[2]} \* 512 / 1024) $(expr \( ${EFI_FDISK[2]} - ${EFI_FDISK[1]} \) \* 512 / 1024) )
       
-      if file "${CLOUD_IMAGE_PATH}" | grep -q QCOW; then
-        qemu-img convert -O raw "${CLOUD_IMAGE_PATH}" "${TARGET_DEVICE}"
-      elif file "${CLOUD_IMAGE_PATH}" | grep -q "\(XZ\|gzip\) compressed"; then
-        LARGEST_FILE=$(tar -tvf "${CLOUD_IMAGE_PATH}" | sort -n | grep -vE "^d" | head -1 | awk '{print $9}')
-        tar -xO "${LARGEST_FILE}" -f "${CLOUD_IMAGE_PATH}" | \
-          dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
-      else
-        echo "wrong_image_file" > /cidata_provision_system
-        exit 0
-      fi
+      echo "ROOT: ${ROOT_PART[0]}, start ${ROOT_PART[1]}KiB, end ${ROOT_PART[2]}KiB, size ${ROOT_PART[3]}KiB"
+      echo "BIOS: ${BIOS_PART[0]}, start ${BIOS_PART[1]}KiB, end ${BIOS_PART[2]}KiB, size ${BIOS_PART[3]}KiB"
+      echo "EFI: ${EFI_PART[0]}, start ${EFI_PART[1]}KiB, end ${EFI_PART[2]}KiB, size ${EFI_PART[3]}KiB"
       
+      LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
+        mklabel gpt \
+        mkpart efi fat32 ${EFI_PART[1]}KiB ${EFI_PART[2]}KiB \
+        set 1 esp on \
+        mkpart grub ${BIOS_PART[1]}KiB ${BIOS_PART[2]}KiB \
+        set 2 bios_grub on \
+        mkpart root ext4 ${ROOT_PART[1]}KiB -8MiB \
+        type 3 4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709 \
+        mkpart cidata fat32 -8MiB -4MiB
+      
+      partx -u "${TARGET_DEVICE}"
+      sleep 1
+      
+      TARGET_LAYOUT=$(fdisk "${TARGET_DEVICE}" -l)
+      TARGET_ROOT_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/root/I!d' | head -n1) )
+      TARGET_BIOS_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/bios/I!d' | head -n1) )
+      TARGET_EFI_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
+      TARGET_ROOT_PART=( ${TARGET_ROOT_FDISK[0]} $(expr ${TARGET_ROOT_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_ROOT_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_ROOT_FDISK[2]} - ${TARGET_ROOT_FDISK[1]} \) \* 512 / 1024) )
+      TARGET_BIOS_PART=( ${TARGET_BIOS_FDISK[0]} $(expr ${TARGET_BIOS_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_BIOS_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_BIOS_FDISK[2]} - ${TARGET_BIOS_FDISK[1]} \) \* 512 / 1024) )
+      TARGET_EFI_PART=( ${TARGET_EFI_FDISK[0]} $(expr ${TARGET_EFI_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_EFI_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_EFI_FDISK[2]} - ${TARGET_EFI_FDISK[1]} \) \* 512 / 1024) )
+      
+      lsblk -o +PARTLABEL,PARTTYPENAME "${TARGET_DEVICE}"
+
+      sleep 10
+
+      mdadm --create /dev/md/os --level 0 --force --raid-devices 1 "${TARGET_ROOT_PART[0]}"
+
+      dd if=${EFI_PART[0]} of=${TARGET_EFI_PART[0]} bs=1M status=progress
+      dd if=${BIOS_PART[0]} of=${TARGET_BIOS_PART[0]} bs=1M status=progress
+      dd if=${ROOT_PART[0]} of=/dev/md/os bs=1M status=progress
+
       # update partitions in kernel
       partx -u "${TARGET_DEVICE}"
       sleep 1
 
-      # resize main ext4/btrfs partition
-      # create cidata partition at the end of the disk
+      lsblk -o +PARTLABEL,PARTTYPENAME "${TARGET_DEVICE}"
+
+      sleep 10
+
+      ## resize main ext4/btrfs partition
+      ## create cidata partition at the end of the disk
       ROOT_PART=( $(lsblk -no PATH,PARTN,PARTLABEL,LABEL,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
       echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
-      LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
-        name "${ROOT_PART[1]}" root \
-        resizepart "${ROOT_PART[1]}" -8MiB \
-        mkpart cidata fat32 -8MiB -4MiB
+      #LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
+      #  name "${ROOT_PART[1]}" root \
+      #  resizepart "${ROOT_PART[1]}" -8MiB \
+      #  mkpart cidata fat32 -8MiB -4MiB
       
-      # update partitions in kernel again
-      partx -u "${TARGET_DEVICE}"
-      sleep 1
+      ## update partitions in kernel again
+      #partx -u "${TARGET_DEVICE}"
+      #sleep 1
 
       # resize main filesystem
       if [ "${ROOT_PART[2]}" == "btrfs" ] || [ "${ROOT_PART[2]}" == "BTRFS" ]; then
-        mount "${ROOT_PART[0]}" /mnt
+        mount /dev/md/os /mnt
         btrfs filesystem resize max /mnt
         sync
         umount -l /mnt
       elif [ "${ROOT_PART[2]}" == "ext4" ] || [ "${ROOT_PART[2]}" == "EXT4" ]; then
-        e2fsck -y -f "${ROOT_PART[0]}"
-        resize2fs "${ROOT_PART[0]}"
+        e2fsck -y -f /dev/md/os
+        resize2fs /dev/md/os
       fi
 
       # write the cidata iso to the cidata partition on disk
@@ -237,7 +278,7 @@ write_files:
       efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI || true
 
       # mount detected root filesystem
-      mount "${ROOT_PART[0]}" /mnt
+      mount /dev/md/os /mnt
       
       # config files for network
       mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
