@@ -170,8 +170,8 @@ write_files:
       fi
 
       CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
-      if [ -e /dev/md/os ]; then
-        TARGET_DEVICE="/dev/md/os"
+      if [ -e /dev/nvme0n1 ]; then
+        TARGET_DEVICE="/dev/nvme0n1"
       elif [ -e /dev/sda ]; then
         TARGET_DEVICE="/dev/sda"
       elif [ -e /dev/vda ]; then
