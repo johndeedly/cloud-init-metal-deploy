@@ -170,9 +170,7 @@ write_files:
       fi
 
       CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
-      if [ -e /dev/md/os ]; then
-        TARGET_DEVICE="/dev/md/os"
-      elif [ -e /dev/sda ]; then
+      if [ -e /dev/sda ]; then
         TARGET_DEVICE="/dev/sda"
       elif [ -e /dev/vda ]; then
         TARGET_DEVICE="/dev/vda"
@@ -191,57 +189,61 @@ write_files:
       ROOT_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/root/I!d' | head -n1) )
       BIOS_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/bios/I!d' | head -n1) )
       EFI_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
-      ROOT_PART=( ${ROOT_FDISK[0]} $(expr ${ROOT_FDISK[1]} \* 512 / 1024) $(expr ${ROOT_FDISK[2]} \* 512 / 1024) $(expr \( ${ROOT_FDISK[2]} - ${ROOT_FDISK[1]} \) \* 512 / 1024) )
-      BIOS_PART=( ${BIOS_FDISK[0]} $(expr ${BIOS_FDISK[1]} \* 512 / 1024) $(expr ${BIOS_FDISK[2]} \* 512 / 1024) $(expr \( ${BIOS_FDISK[2]} - ${BIOS_FDISK[1]} \) \* 512 / 1024) )
-      EFI_PART=( ${EFI_FDISK[0]} $(expr ${EFI_FDISK[1]} \* 512 / 1024) $(expr ${EFI_FDISK[2]} \* 512 / 1024) $(expr \( ${EFI_FDISK[2]} - ${EFI_FDISK[1]} \) \* 512 / 1024) )
+      ROOT_START=$(expr ${ROOT_FDISK[1]} \* 512 / 1024)
+      ROOT_END=$(expr ${ROOT_FDISK[2]} \* 512 / 1024)
+      ROOT_SIZE=$(expr \( ${ROOT_FDISK[2]} - ${ROOT_FDISK[1]} \) \* 512 / 1024)
+      BIOS_START=$(expr ${BIOS_FDISK[1]} \* 512 / 1024)
+      BIOS_END=$(expr ${BIOS_FDISK[2]} \* 512 / 1024)
+      BIOS_SIZE=$(expr \( ${BIOS_FDISK[2]} - ${BIOS_FDISK[1]} \) \* 512 / 1024)
+      EFI_START=$(expr ${EFI_FDISK[1]} \* 512 / 1024)
+      EFI_END=$(expr ${EFI_FDISK[2]} \* 512 / 1024)
+      EFI_SIZE=$(expr \( ${EFI_FDISK[2]} - ${EFI_FDISK[1]} \) \* 512 / 1024)
+
+      # calculate raid header size on top
+      NEW_ROOT_SIZE=$( expr $ROOT_SIZE + 48 )
+      NEW_BIOS_SIZE=$( expr $BIOS_SIZE + 48 )
+      NEW_EFI_SIZE=$( expr $EFI_SIZE + 48 )
       
-      echo "ROOT: ${ROOT_PART[0]}, start ${ROOT_PART[1]}KiB, end ${ROOT_PART[2]}KiB, size ${ROOT_PART[3]}KiB"
-      echo "BIOS: ${BIOS_PART[0]}, start ${BIOS_PART[1]}KiB, end ${BIOS_PART[2]}KiB, size ${BIOS_PART[3]}KiB"
-      echo "EFI: ${EFI_PART[0]}, start ${EFI_PART[1]}KiB, end ${EFI_PART[2]}KiB, size ${EFI_PART[3]}KiB"
+      # calculate new start and end
+      NEW_EFI_START=4096
+      NEW_EFI_END=$( expr $NEW_EFI_START + $NEW_EFI_SIZE )
+      NEW_BIOS_START=$NEW_EFI_END
+      NEW_BIOS_END=$( expr $NEW_BIOS_START + $NEW_BIOS_SIZE )
+      NEW_ROOT_START=$NEW_BIOS_END
+      
+      echo "ROOT: ${ROOT_FDISK[0]}, start ${NEW_ROOT_START}KiB, end -8MiB"
+      echo "BIOS: ${BIOS_FDISK[0]}, start ${NEW_BIOS_START}KiB, end ${NEW_BIOS_END}KiB"
+      echo "EFI: ${EFI_FDISK[0]}, start ${NEW_EFI_START}KiB, end ${NEW_EFI_END}KiB"
       
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
         mklabel gpt \
-        mkpart efi fat32 ${EFI_PART[1]}KiB ${EFI_PART[2]}KiB \
+        mkpart efi fat32 ${NEW_EFI_START}KiB ${NEW_EFI_END}KiB \
         set 1 esp on \
-        mkpart grub ${BIOS_PART[1]}KiB ${BIOS_PART[2]}KiB \
+        mkpart grub ${NEW_BIOS_START}KiB ${NEW_BIOS_END}KiB \
         set 2 bios_grub on \
-        mkpart root ext4 ${ROOT_PART[1]}KiB -8MiB \
+        mkpart root ext4 ${NEW_ROOT_START}KiB -8MiB \
         type 3 4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709 \
         mkpart cidata fat32 -8MiB -4MiB
       
       partx -u "${TARGET_DEVICE}"
       sleep 1
       
-      TARGET_LAYOUT=$(fdisk "${TARGET_DEVICE}" -l)
-      TARGET_ROOT_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/root/I!d' | head -n1) )
-      TARGET_BIOS_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/bios/I!d' | head -n1) )
-      TARGET_EFI_FDISK=( $(echo -en "$TARGET_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
-      TARGET_ROOT_PART=( ${TARGET_ROOT_FDISK[0]} $(expr ${TARGET_ROOT_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_ROOT_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_ROOT_FDISK[2]} - ${TARGET_ROOT_FDISK[1]} \) \* 512 / 1024) )
-      TARGET_BIOS_PART=( ${TARGET_BIOS_FDISK[0]} $(expr ${TARGET_BIOS_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_BIOS_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_BIOS_FDISK[2]} - ${TARGET_BIOS_FDISK[1]} \) \* 512 / 1024) )
-      TARGET_EFI_PART=( ${TARGET_EFI_FDISK[0]} $(expr ${TARGET_EFI_FDISK[1]} \* 512 / 1024) $(expr ${TARGET_EFI_FDISK[2]} \* 512 / 1024) $(expr \( ${TARGET_EFI_FDISK[2]} - ${TARGET_EFI_FDISK[1]} \) \* 512 / 1024) )
-      
-      lsblk -o +PARTLABEL,PARTTYPENAME "${TARGET_DEVICE}"
+      LC_ALL=C yes | LC_ALL=C mdadm --create /dev/md/efi --level 1 --force --raid-devices 1 "${TARGET_DEVICE}1" --metadata 1.0
+      LC_ALL=C yes | LC_ALL=C mdadm --create /dev/md/bios --level 1 --force --raid-devices 1 "${TARGET_DEVICE}2" --metadata 1.0
+      LC_ALL=C yes | LC_ALL=C mdadm --create /dev/md/root --level 0 --force --raid-devices 1 "${TARGET_DEVICE}3"
 
-      sleep 10
-
-      mdadm --create /dev/md/os --level 0 --force --raid-devices 1 "${TARGET_ROOT_PART[0]}"
-
-      dd if=${EFI_PART[0]} of=${TARGET_EFI_PART[0]} bs=1M status=progress
-      dd if=${BIOS_PART[0]} of=${TARGET_BIOS_PART[0]} bs=1M status=progress
-      dd if=${ROOT_PART[0]} of=/dev/md/os bs=1M status=progress
-
-      # update partitions in kernel
-      partx -u "${TARGET_DEVICE}"
-      sleep 1
+      dd if=${EFI_FDISK[0]} of=/dev/md/efi bs=1M status=progress
+      dd if=${BIOS_FDISK[0]} of=/dev/md/bios bs=1M status=progress
+      dd if=${ROOT_FDISK[0]} of=/dev/md/root bs=1M status=progress
 
       lsblk -o +PARTLABEL,PARTTYPENAME "${TARGET_DEVICE}"
 
-      sleep 10
+      sleep 60
 
       ## resize main ext4/btrfs partition
       ## create cidata partition at the end of the disk
-      ROOT_PART=( $(lsblk -no PATH,PARTN,PARTLABEL,LABEL,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
-      echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
+      #ROOT_PART=( $(lsblk -no PATH,PARTN,PARTLABEL,LABEL,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
+      #echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
       #LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
       #  name "${ROOT_PART[1]}" root \
       #  resizepart "${ROOT_PART[1]}" -8MiB \
@@ -253,13 +255,13 @@ write_files:
 
       # resize main filesystem
       if [ "${ROOT_PART[2]}" == "btrfs" ] || [ "${ROOT_PART[2]}" == "BTRFS" ]; then
-        mount /dev/md/os /mnt
+        mount /dev/md/root /mnt
         btrfs filesystem resize max /mnt
         sync
         umount -l /mnt
       elif [ "${ROOT_PART[2]}" == "ext4" ] || [ "${ROOT_PART[2]}" == "EXT4" ]; then
-        e2fsck -y -f /dev/md/os
-        resize2fs /dev/md/os
+        e2fsck -y -f /dev/md/root
+        resize2fs /dev/md/root
       fi
 
       # write the cidata iso to the cidata partition on disk
@@ -268,17 +270,17 @@ write_files:
       mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config /iso/img/install ::
       
       # bootable system
-      BIOS_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/BIOS/I!d' | head -n1) )
-      EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -n1) )
-      echo "BIOS: ${TARGET_DEVICE}, partition ${BIOS_PART[0]}"
-      echo "EFI: ${TARGET_DEVICE}, partition ${EFI_PART[0]}"
-      LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
-        name "${BIOS_PART[0]}" bios \
-        name "${EFI_PART[0]}" efi
-      efibootmgr -c -d "${TARGET_DEVICE}" -p "${EFI_PART[0]}" -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI || true
+      #BIOS_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/BIOS/I!d' | head -n1) )
+      #EFI_PART=( $(lsblk -no PARTN,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/^ *[1-9]/!d' -e '/EFI/I!d' | head -n1) )
+      #echo "BIOS: ${TARGET_DEVICE}, partition ${BIOS_PART[0]}"
+      #echo "EFI: ${TARGET_DEVICE}, partition ${EFI_PART[0]}"
+      #LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
+      #  name "${BIOS_PART[0]}" bios \
+      #  name "${EFI_PART[0]}" efi
+      efibootmgr -c -d "${TARGET_DEVICE}" -p 1 -L cloud-ready-image -l /EFI/BOOT/BOOTX64.EFI || true
 
       # mount detected root filesystem
-      mount /dev/md/os /mnt
+      mount /dev/md/root /mnt
       
       # config files for network
       mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
