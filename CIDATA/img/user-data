@@ -120,7 +120,7 @@ write_files:
 
       [[ -f ~/.bashrc ]] && source ~/.bashrc
 
-      if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+      if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ] && [ -f /bin/startx ]; then
         exec startx
       fi
     owner: 'root:root'
@@ -838,7 +838,7 @@ write_files:
           systemd-homed build-essential \
           doas curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion ncdu pv mc lfm fzf \
-          lshw libxml2 jq yq polkitd man manpages-de trash-cli \
+          lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         download_starship
@@ -848,10 +848,10 @@ write_files:
         systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-          pacman-contrib starship base-devel neovim \
+          pacman-contrib starship base-devel neovim yq \
           doas curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion ncdu pv mc lf fzf \
-          lshw libxml2 jq yq polkit core/man man-pages-de trash-cli \
+          lshw libxml2 jq polkit core/man man-pages-de trash-cli \
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
@@ -860,7 +860,7 @@ write_files:
           systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
           curl wget zstd rsyslog nano npm htop btop git firewalld \
           bash-completion mc \
-          lshw libxml2 jq yq polkit man-db \
+          lshw libxml2 jq polkit man-db \
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip rsync xdg-user-dirs xdg-utils
         download_starship
