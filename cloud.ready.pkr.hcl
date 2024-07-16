@@ -74,7 +74,7 @@ source "qemu" "default" {
   ssh_username         = "root"
   ssh_password         = "packer-build-passwd"
   ssh_timeout          = "10m"
-  vm_name              = "cloud_ready-x86_64.qcow2"
+  vm_name              = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉"), ".qcow2"]) # unicode replacement char for colon
 }
 
 
@@ -101,7 +101,9 @@ source "virtualbox-iso" "default" {
   ssh_timeout              = "10m"
   vboxmanage               = [["modifyvm", "{{ .Name }}", "--chipset", "ich9", "--firmware", "efi", "--cpus", "${var.cpu_cores}", "--audio-driver", "${var.sound_driver}", "--audio-out", "on", "--audio-enabled", "on", "--usb", "on", "--usb-xhci", "on", "--clipboard", "hosttoguest", "--draganddrop", "hosttoguest", "--graphicscontroller", "vmsvga", "--acpi", "on", "--ioapic", "on", "--apic", "on", "--accelerate3d", "${var.accel_graphics}", "--accelerate2dvideo", "on", "--vram", "128", "--pae", "on", "--nested-hw-virt", "on", "--paravirtprovider", "kvm", "--hpet", "on", "--hwvirtex", "on", "--largepages", "on", "--vtxvpid", "on", "--vtxux", "on", "--biosbootmenu", "messageandmenu", "--rtcuseutc", "on", "--nictype1", "virtio", "--macaddress1", "auto"], ["sharedfolder", "add", "{{ .Name }}", "--name", "host.0", "--hostpath", "output/"]]
   vboxmanage_post          = [["modifyvm", "{{ .Name }}", "--macaddress1", "auto"], ["sharedfolder", "remove", "{{ .Name }}", "--name", "host.0"]]
-  vm_name                  = "cloud_ready-x86_64"
+  vm_name                  = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉")]) # unicode replacement char for colon
+  skip_export              = true
+  keep_registered          = true
 }
 
 
