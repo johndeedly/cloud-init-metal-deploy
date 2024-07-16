@@ -12,7 +12,7 @@ Your test environment should include packer for automation and either qemu (Linu
 
 Supported cloud images are Arch Linux, Ubuntu, Debian and Rocky Linux. They must be placed inside the CIDATA/img folder. Additional installation scripts can be placed in CIDATA/img/install.
 
-Just execute pipeline.sh on either windows or Linux and let the setup process build everything fully automated via archiso (Arch Linux install medium) as pxe bootable, cloud-init capable environment.
+Just execute pipeline.ps1 on either windows or Linux and let the setup process build everything fully automated via archiso (Arch Linux install medium) as pxe bootable, cloud-init capable environment.
 
 ⚠️ WORK IN PROGRESS ⚠️
 
