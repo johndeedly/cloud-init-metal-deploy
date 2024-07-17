@@ -782,6 +782,10 @@ write_files:
       
       # system upgrade
       if [ -e /bin/apt ]; then
+        if grep -q Debian /proc/version; then
+          sed -i 's/main/main contrib/g' /etc/apt/sources.list.d/debian.sources
+          LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y update
+        fi
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install systemd-container
       elif [ -e /bin/pacman ]; then

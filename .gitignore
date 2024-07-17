@@ -7,7 +7,9 @@ CIDATA/img/*
 !CIDATA/img/install
 CIDATA/img/install/*
 !CIDATA/img/install/.gitkeep
-!CIDATA/img/install/20_graphical_arch.sh
+!CIDATA/img/install/20_graphical_pacman.sh
+!CIDATA/img/install/20_graphical_apt.sh
+!CIDATA/img/install/20_graphical_yum.sh
 output/
 *.qcow2
 *.tar.xz
