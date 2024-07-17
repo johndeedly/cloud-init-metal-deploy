@@ -40,6 +40,11 @@ variable "headless" {
   default = false
 }
 
+locals {
+  build_name_qemu       = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉"), ".qcow2"]) # unicode replacement char for colon
+  build_name_virtualbox = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉")]) # unicode replacement char for colon
+}
+
 
 source "qemu" "default" {
   shutdown_command     = "/sbin/poweroff"
@@ -74,7 +79,7 @@ source "qemu" "default" {
   ssh_username         = "root"
   ssh_password         = "packer-build-passwd"
   ssh_timeout          = "10m"
-  vm_name              = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉"), ".qcow2"]) # unicode replacement char for colon
+  vm_name              = local.build_name_qemu
 }
 
 
@@ -101,7 +106,7 @@ source "virtualbox-iso" "default" {
   ssh_timeout              = "10m"
   vboxmanage               = [["modifyvm", "{{ .Name }}", "--chipset", "ich9", "--firmware", "efi", "--cpus", "${var.cpu_cores}", "--audio-driver", "${var.sound_driver}", "--audio-out", "on", "--audio-enabled", "on", "--usb", "on", "--usb-xhci", "on", "--clipboard", "hosttoguest", "--draganddrop", "hosttoguest", "--graphicscontroller", "vmsvga", "--acpi", "on", "--ioapic", "on", "--apic", "on", "--accelerate3d", "${var.accel_graphics}", "--accelerate2dvideo", "on", "--vram", "128", "--pae", "on", "--nested-hw-virt", "on", "--paravirtprovider", "kvm", "--hpet", "on", "--hwvirtex", "on", "--largepages", "on", "--vtxvpid", "on", "--vtxux", "on", "--biosbootmenu", "messageandmenu", "--rtcuseutc", "on", "--nictype1", "virtio", "--macaddress1", "auto"], ["sharedfolder", "add", "{{ .Name }}", "--name", "host.0", "--hostpath", "output/"]]
   vboxmanage_post          = [["modifyvm", "{{ .Name }}", "--macaddress1", "auto"], ["sharedfolder", "remove", "{{ .Name }}", "--name", "host.0"]]
-  vm_name                  = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉")]) # unicode replacement char for colon
+  vm_name                  = local.build_name_virtualbox
   skip_export              = true
   keep_registered          = true
 }
@@ -161,7 +166,7 @@ mkdir -p "/tmp/swtpm.0" "share"
   -machine type=q35,accel=kvm \\
   -vga virtio \\
   -cpu host \\
-  -drive file=cloud_ready-x86_64.qcow2,if=virtio,cache=writeback,discard=unmap,detect-zeroes=unmap,format=qcow2 \\
+  -drive file=${local.build_name_qemu},if=virtio,cache=writeback,discard=unmap,detect-zeroes=unmap,format=qcow2 \\
   -device tpm-tis,tpmdev=tpm0 -tpmdev emulator,id=tpm0,chardev=vtpm -chardev socket,id=vtpm,path=/tmp/swtpm.0/vtpm.sock \\
   -drive file=/usr/share/OVMF/x64/OVMF_CODE.secboot.4m.fd,if=pflash,unit=0,format=raw,readonly=on \\
   -drive file=efivars.fd,if=pflash,unit=1,format=raw \\
