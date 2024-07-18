@@ -8,7 +8,7 @@ Some of the scripts in this project **will** destroy all data on your system. So
 
 After the preamble: how to install everything? I assume after this point you want to try everything out first before going the steps to install everything onto your production machine. (**NO!!!**)
 
-Your test environment should include packer for automation and either QEMU (Linux), VirtualBox (Windows) or Proxmox for virtualization.
+Your test environment should include packer for automation, swtpm for TPM emulation and either QEMU (Linux), VirtualBox (Windows) or Proxmox for virtualization.
 
 Supported cloud images are Arch Linux, Ubuntu, Debian and Rocky Linux. They must be placed inside the CIDATA/img folder. Additional installation scripts can be placed in CIDATA/img/install. You can even put all the images in one place together and "disable" the ones you don't need by appending a ".disabled" or similar after the file extension.
 
