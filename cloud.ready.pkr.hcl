@@ -41,8 +41,8 @@ variable "headless" {
 }
 
 locals {
-  build_name_qemu       = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉"), ".qcow2"]) # unicode replacement char for colon
-  build_name_virtualbox = join("-", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉")]) # unicode replacement char for colon
+  build_name_qemu       = join(".", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉"), "qcow2"]) # unicode replacement char for colon
+  build_name_virtualbox = join(".", ["cloud_ready-x86_64", replace(timestamp(), ":", "꞉")]) # unicode replacement char for colon
 }
 
 
