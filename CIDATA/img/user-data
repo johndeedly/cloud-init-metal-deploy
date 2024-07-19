@@ -912,6 +912,21 @@ write_files:
           machinectl shell root@ /bin/bash "$script"
         done
       fi
+      if [ -d /cidata/per-boot ] && [ -n "$(ls /cidata/per-boot)" ]; then
+        # copy the file to the target and alter ownership and permissions
+        rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /cidata/per-boot/ /var/lib/cloud/scripts/per-boot/
+        find /var/lib/cloud/scripts/per-boot/ -name '*.sh' -print -exec chmod 0755 "{}" \;
+      fi
+      if [ -d /cidata/per-instance ] && [ -n "$(ls /cidata/per-instance)" ]; then
+        # copy the file to the target and alter ownership and permissions
+        rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /cidata/per-instance/ /var/lib/cloud/scripts/per-instance/
+        find /var/lib/cloud/scripts/per-instance/ -name '*.sh' -print -exec chmod 0755 "{}" \;
+      fi
+      if [ -d /cidata/per-once ] && [ -n "$(ls /cidata/per-once)" ]; then
+        # copy the file to the target and alter ownership and permissions
+        rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /cidata/per-once/ /var/lib/cloud/scripts/per-once/
+        find /var/lib/cloud/scripts/per-once/ -name '*.sh' -print -exec chmod 0755 "{}" \;
+      fi
       umount -l /cidata
       rm -r /cidata
 
