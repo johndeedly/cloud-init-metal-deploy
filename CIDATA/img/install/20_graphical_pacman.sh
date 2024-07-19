@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# ⚠️ WORK IN PROGRESS ⚠️
+# this script does work mostly and for the broken parts it just needs the scripts
+# from my other projects to be copied over. please be patient...
+
 if ! [ -f /bin/pacman ]; then
     exit 0
 fi

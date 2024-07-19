@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# ⚠️ WORK IN PROGRESS ⚠️
+# this script does work mostly, but the quality is pretty bad,
+# it just works on Debian or apps are missing.
+
+exit 0
 if ! [ -f /bin/apt ]; then
     exit 0
 fi
