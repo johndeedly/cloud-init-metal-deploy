@@ -271,7 +271,7 @@ write_files:
       echo ":: provisioning prepared"
 
       # reboot system
-      ( ( sleep 10 && echo "[ OK ] Please remove the install medium and reboot the system" ) & )
+      ( ( sleep 5 && echo "[ OK ] Please remove the install medium and reboot the system" ) & )
 
       # cleanup
       rm -- "${0}"

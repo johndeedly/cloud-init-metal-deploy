@@ -947,7 +947,7 @@ write_files:
       echo ":: provisioning completed"
 
       # done
-      ( ( sleep 10 && echo "[ OK ] We are done here." ) & )
+      ( ( sleep 5 && echo "[ OK ] We are done here." ) & )
 
       # cleanup
       rm -- "${0}"
