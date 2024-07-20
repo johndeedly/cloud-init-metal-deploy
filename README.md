@@ -14,7 +14,13 @@ Supported cloud images are Arch Linux, Ubuntu, Debian and Rocky Linux. They must
 
 Just execute pipeline.ps1 on either Windows or Linux and let the setup process build everything fully automated via archiso (Arch Linux install medium) as pxe bootable, cloud-init capable environment. After the disk is prepared, archiso isn't needed anymore.
 
-⚠️ WORK IN PROGRESS ⚠️
+## Optional user scripts
+
+The folder ```install``` can contain scripts that are executed before everything is wrapped up. In them you have a fully logged in session at your disposal with all the good systemd and dbus services up and running. Commands like ```dconf``` and such should work out of the box here. 
+
+The folders ```per-boot```, ```per-instance``` and ```per-once``` will map to the corresponding folders under ```/var/lib/cloud/scripts/```, where you can put scripts that are executed on system startup during the final cloud-init modules. ```per-boot``` is especially nice for scenarios where you are in need of a reboot, e.g. when installing drivers or kernel modules.
+
+## ⚠️ WORK IN PROGRESS ⚠️
 
 
 That's all for now. Happy deployment. --johndeedly
