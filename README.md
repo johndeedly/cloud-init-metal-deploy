@@ -22,5 +22,11 @@ The folders ```per-boot```, ```per-instance``` and ```per-once``` will map to th
 
 ## ⚠️ WORK IN PROGRESS ⚠️
 
+The following scripts can be used to customize the deployment process:
+
+- ```per-boot/*_proxmox_*.sh```: Build a proxmox instance virtually for testing or on metal for production use.
+- ```install/*_graphical_*.sh```: Build a graphical environment with some programs preinstalled. Currently the best supported version is for Arch Linux.
+- ```install/*_localmirror_*.sh```: Build a Arch Linux mirror to share packages locally and keep everything in sync automatically.
+
 
 That's all for now. Happy deployment. --johndeedly
