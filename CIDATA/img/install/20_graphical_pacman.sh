@@ -19,6 +19,15 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pamac flatpak \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
+# enable some services
+systemctl enable cups
+
+# add flathub repo to system when not present
+flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# install librewolf
+flatpak install --system --assumeyes --noninteractive --or-update flathub io.gitlab.librewolf-community
+
 # set slick greeter as default
 sed -i 's/^#\?greeter-show-manual-login=.*/greeter-show-manual-login=true/' /etc/lightdm/lightdm.conf
 sed -i 's/^#\?greeter-hide-users=.*/greeter-hide-users=true/' /etc/lightdm/lightdm.conf
@@ -39,12 +48,23 @@ EOF
 rm /etc/systemd/system/display-manager.service || true
 ln -s /usr/lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service
 
+# create profile for X11 sessions
+tee /etc/skel/.xprofile <<EOF
+#!/bin/sh
+[ -f ~/.bash_profile ] && . ~/.bash_profile
+EOF
+
+# menu key is equal to super key
+tee /etc/skel/.Xmodmap <<EOF
+keysym Menu = Super_R
+EOF
+
 # configure cinnamon desktop
 XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-dump.ini
 tee -a /etc/skel/dconf-dump.ini <<EOF
 
 [/]
-favorite-apps=['org.mozilla.firefox.desktop:flatpak', 'org.chromium.Chromium.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
+favorite-apps=['io.gitlab.librewolf-community.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
 [desktop/background]
 picture-uri='file:///usr/share/backgrounds/elementaryos-default'
