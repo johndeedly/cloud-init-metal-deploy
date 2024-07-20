@@ -11,7 +11,7 @@ fi
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pipewire pipewire-pulse pipewire-jack pipewire-alsa wireplumber pamixer pavucontrol playerctl alsa-utils qpwgraph rtkit realtime-privileges \
   xorg-server xorg-xinit xorg-xrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify xarchiver \
-  flameshot libinput xf86-input-libinput xorg-xinput kitty wofi dex xrdp ibus ibus-typing-booster \
+  flameshot libinput xf86-input-libinput xorg-xinput kitty wofi dex xrdp ibus ibus-typing-booster lightdm lightdm-slick-greeter \
   archlinux-wallpaper elementary-wallpapers elementary-icon-theme ttf-dejavu ttf-dejavu-nerd ttf-liberation ttf-font-awesome ttf-hanazono \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita evolution seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
@@ -19,38 +19,27 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pamac flatpak \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
-tee /etc/skel/.xinitrc <<EOF
-#!/usr/bin/env bash
+# set slick greeter as default
+sed -i 's/^#\?greeter-show-manual-login=.*/greeter-show-manual-login=true/' /etc/lightdm/lightdm.conf
+sed -i 's/^#\?greeter-hide-users=.*/greeter-hide-users=true/' /etc/lightdm/lightdm.conf
+sed -i 's/^#\?greeter-session=.*/greeter-session=lightdm-slick-greeter/' /etc/lightdm/lightdm.conf
+
+# configuration for slick-greeter
+tee /etc/lightdm/slick-greeter.conf <<EOF
+[Greeter]
+# LightDM GTK+ Configuration
 #
-# ~/.xinitrc
-#
-
-[[ -f /etc/X11/xinit/.Xresources ]] && xrdb -merge /etc/X11/xinit/.Xresources
-[[ -f "$HOME/.Xresources" ]] && xrdb -merge "$HOME/.Xresources"
-
-[[ -f /etc/X11/xinit/.Xmodmap ]] && xmodmap /etc/X11/xinit/.Xmodmap
-[[ -f "$HOME/.Xmodmap" ]] && xmodmap "$HOME/.Xmodmap"
-
-if [ -d /etc/X11/xinit/xinitrc.d ] ; then
-  for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
-    [ -x "$f" ] && . "$f"
-  done
-  unset f
-fi
-
-# fixed slow startup of gtk applications
-# https://wiki.archlinux.org/title/XDG_Desktop_Portal
-# https://unix.stackexchange.com/questions/748596/very-slow-launch-for-some-applications-after-update-to-debian-12/748604#748604
-export XDG_CURRENT_DESKTOP="cinnamon"
-export WLR_NO_HARDWARE_CURSORS=1
-export WLR_RENDERER="gles2"
-export LIBSEAT_BACKEND="logind".
-systemctl --user import-environment DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP WLR_NO_HARDWARE_CURSORS WLR_RENDERER LIBSEAT_BACKEND
-dbus-update-activation-environment --systemd DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP WLR_NO_HARDWARE_CURSORS WLR_RENDERER LIBSEAT_BACKEND
-
-exec cinnamon-session --session cinnamon
+background=/usr/share/backgrounds/elementaryos-default
+draw-user-backgrounds=true
+show-hostname=true
+clock-format=%H:%M
 EOF
 
+# enable lightdm
+rm /etc/systemd/system/display-manager.service || true
+ln -s /usr/lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service
+
+# configure cinnamon desktop
 XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-dump.ini
 tee -a /etc/skel/dconf-dump.ini <<EOF
 
