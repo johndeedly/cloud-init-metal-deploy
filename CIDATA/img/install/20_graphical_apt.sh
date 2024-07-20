@@ -4,6 +4,7 @@
 # this script does work mostly, but the quality is pretty bad,
 # it just works on Debian or apps are missing.
 
+# remove line to enable build
 exit 0
 if ! [ -f /bin/apt ]; then
     exit 0
