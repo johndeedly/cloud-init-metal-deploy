@@ -41,7 +41,7 @@ if ! [ -d CIDATA/img ]; then
     mkdir -p CIDATA/img
 fi
 
-if ! [ -f "CIDATA/img/archlinux-x86_64-cloudimg.qcow2*" ]; then
+if ! [ -f "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2*" ]; then
     CLOUDHASH=$(curl -sL "http://ftp.halifax.rwth-aachen.de/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256")
 
     log_text "Arch-Linux-x86_64-cloudimg.qcow2"
@@ -52,13 +52,13 @@ if ! [ -f "CIDATA/img/archlinux-x86_64-cloudimg.qcow2*" ]; then
 
     sync
     
-    log_text "Validate checksum of archlinux-x86_64-cloudimg.qcow2"
+    log_text "Validate checksum of Arch-Linux-x86_64-cloudimg.qcow2"
     if ! echo "${CLOUDHASH}" | sha256sum --check --status; then
         log_error "Checksum mismatch"
         exit 1
     fi
 
-    mv "Arch-Linux-x86_64-cloudimg.qcow2" "CIDATA/img/archlinux-x86_64-cloudimg.qcow2"
+    mv "Arch-Linux-x86_64-cloudimg.qcow2" "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2"
 fi
 
 if ! [ -f CIDATA/meta-data ]; then
@@ -78,8 +78,7 @@ xorriso -volid "CIDATA" \
         -map CIDATA/user-data /user-data \
         -map CIDATA/vendor-data /vendor-data \
         -map CIDATA/network-config /network-config \
-        -map CIDATA/img/ /img/ \
-        -map CIDATA/install/ /install/
+        -map CIDATA/img/ /img/
 
 log_text "Create the modified archiso image"
 xorriso -indev "archlinux-x86_64.iso" \
