@@ -192,3 +192,27 @@ mouse-button-modifier='<Super>'
 EOF
 dbus-run-session -- bash -c 'XDG_CONFIG_HOME=/etc/skel/.config dconf load /org/cinnamon/ < /etc/skel/dconf-dump.ini'
 rm /etc/skel/dconf-dump.ini
+
+# install code-oss extensions for user"
+( HOME=/etc/skel /bin/bash -c '
+# csharp
+code --install-extension muhammad-sammy.csharp --force
+# xml
+code --install-extension dotjoshjohnson.xml --force
+# better comments
+code --install-extension aaron-bond.better-comments --force
+# git graph
+code --install-extension mhutchie.git-graph --force
+# git blame
+code --install-extension waderyan.gitblame --force
+# yara
+code --install-extension infosec-intern.yara --force
+# hex editor
+code --install-extension ms-vscode.hexeditor --force
+# german language pack
+code --install-extension ms-ceintl.vscode-language-pack-de --force
+# color code highlighter
+code --install-extension naumovs.color-highlight --force
+' ) &
+pid=$!
+wait $pid
