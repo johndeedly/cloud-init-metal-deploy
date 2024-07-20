@@ -958,11 +958,20 @@ write_files:
       ln -sfn /dev/null /etc/issue.d/cockpit.issue
       sed -i '/^root$/d' /etc/cockpit/disallowed-users
 
+      # sync everything to disk
+      sync
+
       # write status
       echo ":: provisioning completed"
 
       # done
-      ( ( sleep 5 && echo "[ OK ] We are done here." ) & )
+      if [ -n "$(ls /var/lib/cloud/scripts/per-boot)" ] || \
+         [ -n "$(ls /var/lib/cloud/scripts/per-instance)" ] || \
+         [ -n "$(ls /var/lib/cloud/scripts/per-once)" ]; then
+        ( ( sleep 5 && echo "[ OK ] Please reboot the system to apply all settings" ) & )
+      else
+        ( ( sleep 5 && echo "[ OK ] We are done here" ) & )
+      fi
 
       # cleanup
       rm -- "${0}"

@@ -267,6 +267,9 @@ write_files:
       lsblk -o +LABEL,PARTLABEL,FSTYPE,PARTTYPENAME "${TARGET_DEVICE}"
       sleep 5
 
+      # sync everything to disk
+      sync
+
       # write status
       echo ":: provisioning prepared"
 
