@@ -1,4 +1,9 @@
 #!/usr/bin/env pwsh
+Param(
+    [Parameter(Mandatory=$False)]
+    [switch]$PreparePxe
+)
+
 function Packer-BuildAppliance {
 	param([Parameter()][string]$SearchFileName, [Parameter()][string]$Filter, [Parameter()][string]$ArgList)
 	$runit = $false
@@ -33,16 +38,32 @@ function Packer-BuildAppliance {
 
 New-Item -Path $PWD.ProviderPath -Name "output" -ItemType "directory" -Force | Out-Null
 $env:PACKER_LOG=1
-if ($IsWindows -or $env:OS -or $ForceVirtualbox) {
-  # VBOX
-  $env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
-  if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.ova" -ArgList "build -force -on-error=ask -only=virtualbox-iso.default cloud.ready.pkr.hcl") -ne 0) {
-  	break
-  }
+if ($PreparePxe) {
+	if ($IsWindows -or $env:OS -or $ForceVirtualbox) {
+		# VBOX
+		$env:PACKER_LOG_PATH="output/prepare.pxe.archiso-packerlog.txt"
+		if ((Packer-BuildAppliance -ArgList "build -force -on-error=ask -only=virtualbox-iso.default prepare.pxe.archiso.pkr.hcl") -ne 0) {
+			break
+		}
+	} else {
+		# QEMU
+		$env:PACKER_LOG_PATH="output/prepare.pxe.archiso-packerlog.txt"
+		if ((Packer-BuildAppliance -ArgList "build -force -on-error=ask -only=qemu.default prepare.pxe.archiso.pkr.hcl") -ne 0) {
+			break
+		}
+	}
 } else {
-  # QEMU
-  $env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
-  if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default cloud.ready.pkr.hcl") -ne 0) {
-  	break
-  }
+	if ($IsWindows -or $env:OS -or $ForceVirtualbox) {
+		# VBOX
+		$env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
+		if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.ova" -ArgList "build -force -on-error=ask -only=virtualbox-iso.default cloud.ready.pkr.hcl") -ne 0) {
+			break
+		}
+	} else {
+		# QEMU
+		$env:PACKER_LOG_PATH="output/cloud.ready-packerlog.txt"
+		if ((Packer-BuildAppliance -SearchFileName "*cloud.ready*.qcow2" -ArgList "build -force -on-error=ask -only=qemu.default cloud.ready.pkr.hcl") -ne 0) {
+			break
+		}
+	}
 }

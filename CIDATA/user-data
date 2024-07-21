@@ -152,21 +152,22 @@ write_files:
 
       LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base
 
-      # search for the CIDATA drive or partition and mount it
-      CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/iso9660/I!d' | head -n1 | cut -d' ' -f1)
-
-      # mount step
-      if [ -z "$CIDATA_DEVICE" ]; then
-        echo "no_cidata_device" > /cidata_provision_system
-        exit 0
+      if [ -f /cidata/meta-data ] && [ -d /cidata/img ]; then
+        mkdir -p /iso
+        mount --bind /cidata /iso
+      else
+        # search for the CIDATA drive or partition and mount it
+        CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/iso9660/I!d' | head -n1 | cut -d' ' -f1)
+        
+        # mount step
+        mkdir -p /iso
+        mount "$CIDATA_DEVICE" /iso
       fi
-      mkdir -p /iso
-      mount "$CIDATA_DEVICE" /iso
 
       # copy step
       if ! mountpoint -q -- /iso; then
-        echo "no_cidata_mount" > /cidata_provision_system
-        exit 0
+        echo "!! no cidata mount"
+        exit 1
       fi
 
       CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
@@ -177,8 +178,8 @@ write_files:
       elif [ -e /dev/vda ]; then
         TARGET_DEVICE="/dev/vda"
       else
-        echo "no_target_device" > /cidata_provision_system
-        exit 0
+        echo "!! no target device"
+        exit 1
       fi
       echo "CLOUD-IMAGE: ${CLOUD_IMAGE_PATH}, TARGET: ${TARGET_DEVICE}"
       
@@ -189,8 +190,8 @@ write_files:
         tar -xO "${LARGEST_FILE}" -f "${CLOUD_IMAGE_PATH}" | \
           dd "of=${TARGET_DEVICE}" bs=1M iflag=fullblock status=progress
       else
-        echo "wrong_image_file" > /cidata_provision_system
-        exit 0
+        echo "!! wrong image file"
+        exit 1
       fi
       
       # update partitions in kernel
