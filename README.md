@@ -1,4 +1,4 @@
-# Proof of concept deploying cloud ready images on metal via USB Stick or CD Drive
+# Proof of concept deploying cloud ready images on metal via USB Stick, CD Drive or PXE boot
 
 ## WARNING
 
@@ -23,6 +23,8 @@ The folders ```per-boot```, ```per-instance``` and ```per-once``` will map to th
 # Production use
 
 After testing your setup in a virtual environment, the process of deploying everything on metal is straight forward. First, you need to execute the ```package-archiso.sh``` script, which will take all the scripts in the CIDATA folder and bundles them with the archiso image on a separate partition for cloud-init to detect as a nocloud source. The second step after building the modified iso is to burn it on a dvd-disc or ```dd```'ing the image to a usb stick. Ventoy is known to cause problems, so be prepared to drop the image as is on a stick, deleting all data stored on it in the process. Be careful which drive you ```dd``` (just saying...)!!
+
+PXE booting the iso to install it's contents is also a perfectly vaild option. Archiso can help you with that, as it can be booted via PXE, too. Booting the iso directly with a program like iPXE is possible, but Arch Linux breaks finding it's squashfs and crashes. The process of booting the extracted contents of the iso from a TFTP/HTTP-Server combo is all but easy, so I prepared a little helper script: you need to execute the ```pipeline.ps1``` script with the parameter ```-PreparePxe```. Afterwards, in the ```output``` folder there will be a folder named ```pxe``` in which the contents for the tftp and http servers can be found. A fair warning: the tool is not yet finished as the cloud-init setup process cannot find all the needed mount points, throws errors and as a result the target is not bootable sadly... (yet)
 
 ## ⚠️ WORK IN PROGRESS ⚠️
 

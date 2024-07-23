@@ -26,10 +26,27 @@ else
     exit 1
 fi
 
+#CLOUD_IMAGE_PATH=$(find /iso/CIDATA/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
+#echo "CLOUD-IMAGE: ${CLOUD_IMAGE_PATH}"
+#
+#LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base
+#
+#modprobe nbd max_part=8
+#qemu-nbd --connect=/dev/nbd0 --read-only "${CLOUD_IMAGE_PATH}"
+#sleep 1
+#partx -u /dev/nbd0
+#sleep 1
+#
+#CLOUD_IMAGE_LAYOUT=$(fdisk /dev/nbd0 -l)
+#ROOT_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/root/I!d' | head -n1) )
+#BIOS_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/bios/I!d' | head -n1) )
+#EFI_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
+
 # create basic pxe boot structure for http and tftp
 mkdir -p /share/pxe/{tftp,http}/arch/x86_64
 mkdir -p /tmp/{lower,upper,work,root}
 
+# mount "${ROOT_FDISK[0]}" /tmp/lower
 mount /run/archiso/bootmnt/arch/x86_64/airootfs.sfs /tmp/lower
 mount -t overlay none -olowerdir=/iso/CIDATA:/tmp/lower,upperdir=/tmp/upper,workdir=/tmp/work /tmp/root
 mkdir -p /tmp/root/cidata
@@ -38,6 +55,9 @@ mv /tmp/root/meta-data /tmp/root/cidata/
 mv /tmp/root/network-config /tmp/root/cidata/
 mv /tmp/root/user-data /tmp/root/cidata/
 mv /tmp/root/vendor-data /tmp/root/cidata/
+find /tmp/root/cidata/img/ -maxdepth 1 -name "*.disabled" -delete
+arch-chroot /tmp/root systemctl disable systemd-time-wait-sync.service
+arch-chroot /tmp/root systemctl mask time-sync.target
 
 if [ -f /share/pxe/http/arch/x86_64/airootfs.sfs ]; then
   rm /share/pxe/http/arch/x86_64/airootfs.sfs
