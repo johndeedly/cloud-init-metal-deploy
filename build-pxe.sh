@@ -68,6 +68,32 @@ mksquashfs /tmp/root /share/pxe/http/arch/x86_64/airootfs.sfs -comp zstd -Xcompr
 rsync -av /run/archiso/bootmnt/boot/syslinux/ /share/pxe/tftp/
 rsync -av /run/archiso/bootmnt/arch/boot/x86_64/*linux* /share/pxe/tftp/arch/x86_64/
 
+# create pxe boot initramfs
+mkdir -p /etc/initcpio/{install,hooks} /etc/mkinitcpio{,.conf}.d
+tee /etc/pxe.conf <<EOF
+HOOKS=(base udev keyboard modconf pxe pxe_http block filesystems)
+COMPRESSION="zstd"
+EOF
+
+tee /etc/mkinitcpio.d/pxe.preset <<EOF
+ALL_kver="/run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux"
+#microcode=(/boot/*-ucode.img)
+
+PRESETS=('pxe')
+
+pxe_config='/etc/pxe.conf'
+pxe_image="/boot/initramfs-linux-pxe.img"
+EOF
+
+cp /iso/install/pxe /etc/initcpio/install/pxe
+cp /iso/install/pxe_http /etc/initcpio/install/pxe_http
+cp /iso/hooks/pxe /etc/initcpio/hooks/pxe
+cp /iso/hooks/pxe_http /etc/initcpio/hooks/pxe_http
+
+mkdir -p /var/tmp/mkinitcpio
+mkinitcpio -p pxe -t /var/tmp/mkinitcpio
+rm -rf /var/tmp/mkinitcpio
+
 # create default pxe boot entry to boot from http
 mkdir -p /share/pxe/tftp/pxelinux.cfg
 tee /share/pxe/tftp/pxelinux.cfg/default <<EOF
