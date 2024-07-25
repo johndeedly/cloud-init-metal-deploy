@@ -65,8 +65,7 @@ fi
 mksquashfs /tmp/root /share/pxe/http/arch/x86_64/airootfs.sfs -comp zstd -Xcompression-level 4 -b 1M -progress -wildcards \
   -e "boot/*" "dev/*" "etc/fstab" "etc/crypttab" "etc/crypttab.initramfs" "proc/*" "sys/*" "run/*" "mnt/*" "media/*" "tmp/*" "var/tmp/*" "var/cache/pacman/pkg/*"
 
-rsync -av /run/archiso/bootmnt/boot/syslinux/ /share/pxe/tftp/
-rsync -av /run/archiso/bootmnt/arch/boot/x86_64/*linux* /share/pxe/tftp/arch/x86_64/
+rsync -av --exclude='archiso*.cfg' --exclude='syslinux*.cfg' /run/archiso/bootmnt/boot/syslinux/ /share/pxe/tftp/
 
 # create pxe boot initramfs
 mkdir -p /etc/initcpio/{install,hooks} /etc/mkinitcpio{,.conf}.d
@@ -93,6 +92,9 @@ cp /iso/hooks/pxe_http /etc/initcpio/hooks/pxe_http
 mkdir -p /var/tmp/mkinitcpio
 mkinitcpio -p pxe -t /var/tmp/mkinitcpio
 rm -rf /var/tmp/mkinitcpio
+
+rsync -av /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/arch/x86_64/
+rsync -av /boot/initramfs-linux-pxe.img /share/pxe/tftp/arch/x86_64/
 
 # create default pxe boot entry to boot from http
 mkdir -p /share/pxe/tftp/pxelinux.cfg
