@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # remove line to enable build
-# exit 0
+exit 0
 if ! [ -f /bin/pacman ]; then
     exit 0
 fi
