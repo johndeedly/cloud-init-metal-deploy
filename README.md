@@ -24,7 +24,44 @@ The folders ```per-boot```, ```per-instance``` and ```per-once``` will map to th
 
 After testing your setup in a virtual environment, the process of deploying everything on metal is straight forward. First, you need to execute the ```package-archiso.sh``` script, which will take all the scripts in the CIDATA folder and bundles them with the archiso image on a separate partition for cloud-init to detect as a nocloud source. The second step after building the modified iso is to burn it on a dvd-disc or ```dd```'ing the image to a usb stick. Ventoy is known to cause problems, so be prepared to drop the image as is on a stick, deleting all data stored on it in the process. Be careful which drive you ```dd``` (just saying...)!!
 
-PXE booting the iso to install it's contents is also a perfectly vaild option. Archiso can help you with that, as it can be booted via PXE, too. Booting the iso directly with a program like iPXE is possible, but Arch Linux breaks finding it's squashfs and crashes. The process of booting the extracted contents of the iso from a TFTP/HTTP-Server combo is all but easy, so I prepared a little helper script: you need to execute the ```pipeline.ps1``` script with the parameter ```-PreparePxe```. Afterwards, in the ```output``` folder there will be a folder named ```pxe``` in which the contents for the tftp and http servers can be found. A fair warning: the tool is not yet finished as the cloud-init setup process cannot find all the needed mount points, throws errors and as a result the target is not bootable sadly... (yet)
+## PXE
+
+PXE booting the iso to install it's contents is also a perfectly vaild option. Archiso can help you with that, as it supports PXE out of the box. As booting the iso directly with a program like iPXE is possible, for sure, Arch Linux breaks finding it's squashfs and crashes, sadly. The more feasible option is either booting the contents of the iso through PXE or just build everything manually around it. I wrote a small helper ".pkr.hcl" to guide you through the latter process:
+
+- ```pipeline.ps1 -PreparePxe```
+
+This command takes the contents of the archiso and processes them in the following folder structure:
+
+```
+output/
+ ╰─ pxe/
+     ├─ http/arch/x86_64/pxeboot.img
+     │    Compressed (zstd lvl 4) squash filesystem containing the root folder structure.
+     │    Needs to be copied over to /srv/pxe/arch/x86_64/
+     ╰─ tftp/
+         ├─ bios/ (legacy bios boot)
+         │   ├─ pxelinux.cfg/default
+         │   │    Configuration file for PXELinux
+         │   ╰─ arch/x86_64/vmlinuz-linux, arch/x86_64/initramfs-linux-pxe.img
+         │        Kernel and Initial RAM Filesystem, modified for booting through HTTP
+         │        and other protocols (more in the future).
+         ├─ efi32/ (legacy uefi boot)
+         │   ├─ pxelinux.cfg/default
+         │   │    Configuration file for Syslinux
+         │   │    Syslinux as a successor to PXELinux supports the old config location
+         │   ╰─ arch/x86_64/vmlinuz-linux, arch/x86_64/initramfs-linux-pxe.img
+         │        Kernel and Initial RAM Filesystem, modified for booting through HTTP
+         │        and other protocols (more in the future).
+         ╰─ efi64/ (modern uefi boot)
+             ├─ pxelinux.cfg/default
+             │    Configuration file for Syslinux
+             │    Syslinux as a successor to PXELinux supports the old config location
+             ╰─ arch/x86_64/vmlinuz-linux, arch/x86_64/initramfs-linux-pxe.img
+                  Kernel and Initial RAM Filesystem, modified for booting through HTTP
+                  and other protocols (more in the future).
+```
+
+These files allow you to boot through PXE into the same setup environment that would be booted when running the iso directly. If you want to host a custom PXE server for testing, you can do that through the ```pipeline.ps1``` command as usual. Keep in mind, that you need the Arch Linux Cloud Image as well as the ```20_pxe_pacman.sh``` installation script enabled.
 
 ## ⚠️ WORK IN PROGRESS ⚠️
 

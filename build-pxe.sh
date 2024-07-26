@@ -43,7 +43,7 @@ fi
 #EFI_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
 
 # create basic pxe boot structure for http and tftp
-mkdir -p /share/pxe/{tftp,http}/arch/x86_64
+mkdir -p /share/pxe/{tftp/bios,tftp/efi32,tftp/efi64,http}/arch/x86_64
 mkdir -p /tmp/{lower,upper,work,root}
 
 # mount "${ROOT_FDISK[0]}" /tmp/lower
@@ -59,31 +59,33 @@ find /tmp/root/cidata/img/ -maxdepth 1 -name "*.disabled" -delete
 arch-chroot /tmp/root systemctl disable systemd-time-wait-sync.service
 arch-chroot /tmp/root systemctl mask time-sync.target
 
-if [ -f /share/pxe/http/arch/x86_64/airootfs.sfs ]; then
-  rm /share/pxe/http/arch/x86_64/airootfs.sfs
+if [ -f /share/pxe/http/arch/x86_64/pxeboot.img ]; then
+  rm /share/pxe/http/arch/x86_64/pxeboot.img
 fi
-mksquashfs /tmp/root /share/pxe/http/arch/x86_64/airootfs.sfs -comp zstd -Xcompression-level 4 -b 1M -progress -wildcards \
+mksquashfs /tmp/root /share/pxe/http/arch/x86_64/pxeboot.img -comp zstd -Xcompression-level 4 -b 1M -progress -wildcards \
   -e "boot/*" "dev/*" "etc/fstab" "etc/crypttab" "etc/crypttab.initramfs" "proc/*" "sys/*" "run/*" "mnt/*" "media/*" "tmp/*" "var/tmp/*" "var/cache/pacman/pkg/*"
 
-rsync -av --exclude='archiso*.cfg' --exclude='syslinux*.cfg' /run/archiso/bootmnt/boot/syslinux/ /share/pxe/tftp/
+# Configure tftp
+mkdir -p /share/pxe/tftp/{bios,efi32,efi64}/pxelinux.cfg
+cp -ar /usr/lib/syslinux/bios /share/pxe/tftp/
+cp -ar /usr/lib/syslinux/efi32 /share/pxe/tftp/
+cp -ar /usr/lib/syslinux/efi64 /share/pxe/tftp/
+cp /iso/pxecfg_bootdefault /share/pxe/tftp/bios/pxelinux.cfg/default
+cp /iso/pxecfg_bootdefault /share/pxe/tftp/efi32/pxelinux.cfg/default
+cp /iso/pxecfg_bootdefault /share/pxe/tftp/efi64/pxelinux.cfg/default
+sed -i 's/MENU TITLE \(.*\)/MENU TITLE \1 [BIOS 32bit]/' /share/pxe/tftp/bios/pxelinux.cfg/default
+sed -i 's/MENU TITLE \(.*\)/MENU TITLE \1 [EFI 32bit]/' /share/pxe/tftp/efi32/pxelinux.cfg/default
+sed -i 's/MENU TITLE \(.*\)/MENU TITLE \1 [EFI 64bit]/' /share/pxe/tftp/efi64/pxelinux.cfg/default
+
+LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm --needed imagemagick elementary-wallpapers
+magick /usr/share/backgrounds/elementaryos-default -resize 640x480 PNG8:/share/pxe/tftp/bios/splash.png
+cp /share/pxe/tftp/bios/splash.png /share/pxe/tftp/efi32/splash.png
+cp /share/pxe/tftp/bios/splash.png /share/pxe/tftp/efi64/splash.png
 
 # create pxe boot initramfs
 mkdir -p /etc/initcpio/{install,hooks} /etc/mkinitcpio{,.conf}.d
-tee /etc/pxe.conf <<EOF
-HOOKS=(base udev keyboard modconf pxe pxe_http block filesystems)
-COMPRESSION="zstd"
-EOF
-
-tee /etc/mkinitcpio.d/pxe.preset <<EOF
-ALL_kver="/run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux"
-#microcode=(/boot/*-ucode.img)
-
-PRESETS=('pxe')
-
-pxe_config='/etc/pxe.conf'
-pxe_image="/boot/initramfs-linux-pxe.img"
-EOF
-
+cp /iso/pxecfg /etc/pxe.conf
+cp /iso/pxepreset /etc/mkinitcpio.d/pxe.preset
 cp /iso/install/pxe /etc/initcpio/install/pxe
 cp /iso/install/pxe_http /etc/initcpio/install/pxe_http
 cp /iso/hooks/pxe /etc/initcpio/hooks/pxe
@@ -93,48 +95,7 @@ mkdir -p /var/tmp/mkinitcpio
 mkinitcpio -p pxe -t /var/tmp/mkinitcpio
 rm -rf /var/tmp/mkinitcpio
 
-rsync -av /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/arch/x86_64/
-rsync -av /boot/initramfs-linux-pxe.img /share/pxe/tftp/arch/x86_64/
-
-# create default pxe boot entry to boot from http
-mkdir -p /share/pxe/tftp/pxelinux.cfg
-tee /share/pxe/tftp/pxelinux.cfg/default <<EOF
-UI vesamenu.c32
-SERIAL 0 115200
-PROMPT 0
-TIMEOUT 20
-ONTIMEOUT ArchHTTP
-
-MENU TITLE Arch Linux PXE Menu
-MENU BACKGROUND splash.png
-
-MENU WIDTH 78
-MENU MARGIN 4
-MENU ROWS 7
-MENU VSHIFT 10
-MENU TABMSGROW 14
-MENU CMDLINEROW 14
-MENU HELPMSGROW 16
-MENU HELPMSGENDROW 29
-
-MENU COLOR border       30;44   #40ffffff #a0000000 std
-MENU COLOR title        1;36;44 #9033ccff #a0000000 std
-MENU COLOR sel          7;37;40 #e0ffffff #20ffffff all
-MENU COLOR unsel        37;44   #50ffffff #a0000000 std
-MENU COLOR help         37;40   #c0ffffff #a0000000 std
-MENU COLOR timeout_msg  37;40   #80ffffff #00000000 std
-MENU COLOR timeout      1;37;40 #c0ffffff #00000000 std
-MENU COLOR msg07        37;40   #90ffffff #a0000000 std
-MENU COLOR tabmsg       31;40   #30ffffff #00000000 std
-
-MENU CLEAR
-MENU IMMEDIATE
-
-
-LABEL ArchHTTP
-MENU LABEL Boot Arch Linux using HTTP
-LINUX arch/x86_64/vmlinuz-linux
-INITRD arch/x86_64/initramfs-linux-pxe.img
-APPEND pxe_http_srv=http://\${pxeserver}/ cow_spacesize=75% ds=nocloud;s=file:///cidata/
-SYSAPPEND 3
-EOF
+mkdir -p /share/pxe/tftp/{bios,efi32,efi64}/arch/x86_64
+rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/bios/arch/x86_64/
+rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/efi32/arch/x86_64/
+rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/efi64/arch/x86_64/
