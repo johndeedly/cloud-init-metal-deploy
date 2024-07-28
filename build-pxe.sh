@@ -43,7 +43,8 @@ fi
 #EFI_FDISK=( $(echo -en "$CLOUD_IMAGE_LAYOUT" | sed -e '/efi/I!d' | head -n1) )
 
 # create basic pxe boot structure for http and tftp
-mkdir -p /share/pxe/{tftp/bios,tftp/efi32,tftp/efi64,http}/arch/x86_64
+mkdir -p /share/pxe/http/arch/x86_64
+mkdir -p /share/pxe/tftp/{bios,efi32,efi64}
 mkdir -p /tmp/{lower,upper,work,root}
 
 # mount "${ROOT_FDISK[0]}" /tmp/lower
@@ -64,6 +65,8 @@ if [ -f /share/pxe/http/arch/x86_64/pxeboot.img ]; then
 fi
 mksquashfs /tmp/root /share/pxe/http/arch/x86_64/pxeboot.img -comp zstd -Xcompression-level 4 -b 1M -progress -wildcards \
   -e "boot/*" "dev/*" "etc/fstab" "etc/crypttab" "etc/crypttab.initramfs" "proc/*" "sys/*" "run/*" "mnt/*" "media/*" "tmp/*" "var/tmp/*" "var/cache/pacman/pkg/*"
+chown root:root /share/pxe/http/arch/x86_64/pxeboot.img
+chmod 644 /share/pxe/http/arch/x86_64/pxeboot.img
 
 # Configure tftp
 mkdir -p /share/pxe/tftp/{bios,efi32,efi64}/pxelinux.cfg
@@ -95,7 +98,4 @@ mkdir -p /var/tmp/mkinitcpio
 mkinitcpio -p pxe -t /var/tmp/mkinitcpio
 rm -rf /var/tmp/mkinitcpio
 
-mkdir -p /share/pxe/tftp/{bios,efi32,efi64}/arch/x86_64
-rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/bios/arch/x86_64/
-rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/efi32/arch/x86_64/
-rsync -av /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/tftp/efi64/arch/x86_64/
+rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /boot/initramfs-linux-pxe.img /run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux /share/pxe/http/arch/x86_64/

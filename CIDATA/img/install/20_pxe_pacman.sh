@@ -108,7 +108,7 @@ rm -r /srv/tftp/*
 cp -ar /usr/lib/syslinux/bios /srv/tftp/
 cp -ar /usr/lib/syslinux/efi32 /srv/tftp/
 cp -ar /usr/lib/syslinux/efi64 /srv/tftp/
-mkdir -p /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg /srv/tftp/{bios,efi32,efi64}/arch/x86_64
+mkdir -p /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg
 
 # Configure http
 mkdir -p /srv/pxe/arch/x86_64
@@ -132,20 +132,3 @@ firewall-offline-cmd --zone=public --add-service=proxy-dhcp
 firewall-offline-cmd --zone=public --add-service=dhcpv6
 firewall-offline-cmd --zone=public --add-service=tftp
 firewall-offline-cmd --zone=public --add-service=http
-
-# virtualbox or qemu
-VIRTENV=$(systemd-detect-virt)
-mkdir -p /share
-if [ "oracle" = "$VIRTENV" ]; then
-    mount -t vboxsf -o rw host.0 /share
-elif [ "kvm" = "$VIRTENV" ] || [ "qemu" = "$VIRTENV" ]; then
-    mount -t 9p -o trans=virtio,version=9p2000.L,rw host.0 /share
-fi
-
-# check if -PreparePxe was executed beforehand
-if mountpoint -q -- /share; then
-  if [ -d /share/pxe ]; then
-    rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /share/pxe/http/* /srv/pxe/
-    rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /share/pxe/tftp/* /srv/tftp/
-  fi
-fi

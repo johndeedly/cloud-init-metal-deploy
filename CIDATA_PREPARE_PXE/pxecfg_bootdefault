@@ -32,7 +32,7 @@ MENU IMMEDIATE
 
 LABEL ArchHTTP
 MENU LABEL Boot Arch Linux using HTTP
-LINUX arch/x86_64/vmlinuz-linux
-INITRD arch/x86_64/initramfs-linux-pxe.img
+LINUX http://IPADDR/arch/x86_64/vmlinuz-linux
+INITRD http://IPADDR/arch/x86_64/initramfs-linux-pxe.img
 APPEND pxe_http_srv=http://${pxeserver}/ cow_spacesize=75% ds=nocloud;s=file:///cidata/
 SYSAPPEND 3
