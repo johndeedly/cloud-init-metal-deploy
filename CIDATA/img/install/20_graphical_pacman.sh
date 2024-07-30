@@ -41,7 +41,6 @@ tee /etc/lightdm/slick-greeter.conf <<EOF
 # LightDM GTK+ Configuration
 #
 background=/usr/share/backgrounds/elementaryos-default
-draw-user-backgrounds=true
 show-hostname=true
 clock-format=%H:%M
 EOF
