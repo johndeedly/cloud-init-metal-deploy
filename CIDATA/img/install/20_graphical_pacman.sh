@@ -23,6 +23,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
 
 # enable some services
 systemctl enable cups NetworkManager
+systemctl mask NetworkManager-wait-online
 
 # do not wait for online interfaces
 mkdir -p /etc/systemd/system/NetworkManager-wait-online.service.d
