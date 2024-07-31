@@ -26,7 +26,7 @@ systemctl enable cups NetworkManager
 
 # do not wait for online interfaces
 mkdir -p /etc/systemd/system/NetworkManager-wait-online.service.d
-tee /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf <<EOF
+tee /etc/systemd/system/NetworkManager-wait-online.service.d/wait-online-never.conf <<EOF
 [Service]
 ExecStart=
 ExecStart=/usr/bin/nm-online -x -q
