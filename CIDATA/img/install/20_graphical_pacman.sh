@@ -18,7 +18,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
-  pamac flatpak \
+  pamac flatpak gnome-keyring \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
 # enable some services
@@ -226,3 +226,14 @@ code --install-extension naumovs.color-highlight --force
 ' ) &
 pid=$!
 wait $pid
+
+echo ":: append gnome keyring to pam login"
+# see https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
+if [ -f /etc/pam.d/login ]; then
+  sed -i 's/auth\s\+include\s\+system-local-login/auth       include      system-local-login\nauth       optional     pam_gnome_keyring.so/' /etc/pam.d/login
+  sed -i 's/session\s\+include\s\+system-local-login/session    include      system-local-login\nsession    optional     pam_gnome_keyring.so auto_start/' /etc/pam.d/login
+  systemctl --global disable gnome-keyring-daemon.socket
+fi
+if [ -f /etc/pam.d/passwd ]; then
+  sed -i 's/password\s\+include\s\+system-auth/password        include         system-auth\npassword        optional        pam_gnome_keyring.so/' /etc/pam.d/passwd
+fi

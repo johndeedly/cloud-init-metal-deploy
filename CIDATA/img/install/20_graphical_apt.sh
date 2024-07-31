@@ -22,7 +22,7 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install 
   elementary-icon-theme plasma-workspace-wallpapers \
   cups ipp-usb libreoffice krita evolution seahorse freerdp3-x11 notepadqq gitg keepassxc pdfpc \
   texlive xdg-desktop-portal xdg-desktop-portal-gtk wine winetricks mpv gpicview qalculate-gtk \
-  flatpak \
+  flatpak gnome-keyring \
   cinnamon cinnamon-l10n network-manager system-config-printer
 
 tee /etc/skel/.xinitrc <<EOF
@@ -189,3 +189,14 @@ mouse-button-modifier='<Super>'
 EOF
 dbus-run-session -- bash -c 'XDG_CONFIG_HOME=/etc/skel/.config dconf load /org/cinnamon/ < /etc/skel/dconf-dump.ini'
 rm /etc/skel/dconf-dump.ini
+
+echo ":: append gnome keyring to pam login"
+# see https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
+if [ -f /etc/pam.d/login ]; then
+    sed -i 's/auth\s\+include\s\+system-local-login/auth       include      system-local-login\nauth       optional     pam_gnome_keyring.so/' /etc/pam.d/login
+    sed -i 's/session\s\+include\s\+system-local-login/session    include      system-local-login\nsession    optional     pam_gnome_keyring.so auto_start/' /etc/pam.d/login
+    systemctl --global disable gnome-keyring-daemon.socket
+fi
+if [ -f /etc/pam.d/passwd ]; then
+    sed -i 's/password\s\+include\s\+system-auth/password        include         system-auth\npassword        optional        pam_gnome_keyring.so/' /etc/pam.d/passwd
+fi
