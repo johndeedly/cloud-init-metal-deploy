@@ -16,7 +16,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   flameshot libinput xf86-input-libinput xorg-xinput kitty wofi dex xrdp ibus ibus-typing-booster lightdm lightdm-slick-greeter \
   archlinux-wallpaper elementary-wallpapers elementary-icon-theme ttf-dejavu ttf-dejavu-nerd ttf-liberation ttf-font-awesome ttf-hanazono \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
-  cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita evolution seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
+  cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
   pamac flatpak \
   cinnamon cinnamon-translations networkmanager system-config-printer
@@ -29,6 +29,9 @@ flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/
 
 # install librewolf
 flatpak install --system --assumeyes --noninteractive --or-update flathub io.gitlab.librewolf-community
+
+# install betterbird
+flatpak install --system --assumeyes --noninteractive --or-update flathub eu.betterbird.Betterbird
 
 # set slick greeter as default
 sed -i 's/^#\?greeter-show-manual-login=.*/greeter-show-manual-login=true/' /etc/lightdm/lightdm.conf
@@ -65,7 +68,7 @@ XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-du
 tee -a /etc/skel/dconf-dump.ini <<EOF
 
 [/]
-favorite-apps=['io.gitlab.librewolf-community.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
+favorite-apps=['io.gitlab.librewolf-community.desktop:flatpak', 'eu.betterbird.Betterbird.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
 [desktop/background]
 picture-uri='file:///usr/share/backgrounds/elementaryos-default'
