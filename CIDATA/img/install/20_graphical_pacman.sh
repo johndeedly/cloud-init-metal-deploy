@@ -22,7 +22,15 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
 # enable some services
-systemctl enable cups
+systemctl enable cups NetworkManager
+
+# do not wait for online interfaces
+mkdir -p /etc/systemd/system/NetworkManager-wait-online.service.d
+tee /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/nm-online -x -q
+EOF
 
 # add flathub repo to system when not present
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
