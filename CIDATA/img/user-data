@@ -901,6 +901,13 @@ write_files:
       pid=$!
       echo ":: wait for NvChad to finish"
       wait $pid
+
+      echo ":: create user homes on login"
+      # see https://wiki.archlinux.org/title/LDAP_authentication for more details
+      # TODO: on ubuntu system-login is missing - investigate!
+      if [ -f /etc/pam.d/system-login ]; then
+          sed -i 's/session\s\+required\s\+pam_env.so/session    required   pam_env.so\nsession    required   pam_mkhomedir.so     skel=\/etc\/skel umask=0077/' /etc/pam.d/system-login
+      fi
       
       # search for additional userscripts 
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)
