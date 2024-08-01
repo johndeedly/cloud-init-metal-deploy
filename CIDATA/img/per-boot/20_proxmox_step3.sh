@@ -18,22 +18,27 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt install pro
 # apply the new settings to grub
 update-grub
 
-# default network bridge: private sub network with masquerading to the outwards network
+# one bridge per interface, dhcp setup
+cnt=$((-1))
+ip -j link show | jq -r '.[] | select(.link_type != "loopback") | .ifname' | while read -r line; do
+cnt=$((cnt+1))
 tee -a /etc/network/interfaces <<EOF
 
-auto vmbr0
-#private sub network
-iface vmbr0 inet static
-    address  172.31.100.1/24
-    bridge-ports none
+iface $line inet manual
+
+auto vmbr$cnt
+iface vmbr$cnt inet dhcp
+    bridge-ports $line
     bridge-stp off
     bridge-fd 0
-    post-up   echo 1 > /proc/sys/net/ipv4/ip_forward
-    post-up   iptables -t nat -A POSTROUTING -s '172.31.100.0/24' -o enp0s3 -j MASQUERADE
-    post-down iptables -t nat -D POSTROUTING -s '172.31.100.0/24' -o enp0s3 -j MASQUERADE
-    post-up   iptables -t raw -I PREROUTING -i fwbr+ -j CT --zone 1
-    post-down iptables -t raw -D PREROUTING -i fwbr+ -j CT --zone 1
+    bridge-vlan-aware yes
+    bridge-vids 2-4094
 EOF
+done
+
+# do not wait for online interfaces
+systemctl mask systemd-networkd-wait-online
+systemctl mask NetworkManager-wait-online
 
 # open up the port for the proxmox webinterface
 firewall-offline-cmd --zone=public --add-port=8006/tcp

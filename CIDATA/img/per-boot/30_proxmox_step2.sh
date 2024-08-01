@@ -35,13 +35,15 @@ tee /etc/hosts <<EOF
 # See hosts(5) for details.
 
 # https://www.icann.org/en/public-comment/proceeding/proposed-top-level-domain-string-for-private-use-24-01-2024
-# IPv4/v6   FQDN      HOSTNAME
-127.0.0.1   $FQDNAME  $HOSTNAME  localhost.internal  localhost
-::1         $FQDNAME  $HOSTNAME  localhost.internal  localhost
+# $(printf "%-12s  %-20s  %-20s" "IPv4/v6" "FQDN" "HOSTNAME")
+$(printf "%-14s  %20s  %20s" "127.0.0.1" "$FQDNAME" "$HOSTNAME")
+$(printf "%-14s  %20s  %20s" "::1" "$FQDNAME" "$HOSTNAME")
+$(printf "%-14s  %20s  %20s" "127.0.0.1" "localhost.internal" "localhost")
+$(printf "%-14s  %20s  %20s" "::1" "localhost.internal" "localhost")
 EOF
 ip -f inet addr | awk '/inet / {print $2}' | cut -d'/' -f1 | while read -r PUB_IP_ADDR; do
 tee -a /etc/hosts <<EOF
-$PUB_IP_ADDR   $FQDNAME  $HOSTNAME
+$(printf "%-14s  %20s  %20s" "$PUB_IP_ADDR" "$FQDNAME" "$HOSTNAME")
 EOF
 done
 
