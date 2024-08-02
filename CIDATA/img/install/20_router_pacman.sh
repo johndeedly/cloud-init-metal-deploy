@@ -6,7 +6,7 @@ if ! [ -f /bin/pacman ]; then
     exit 0
 fi
 
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed dnsmasq iptraf-ng ntp step-ca step-cli
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=option:dns-server,172.26.0.1\n"
@@ -15,6 +15,29 @@ DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=option6:ntp-server,[2001:db8:7b:1::]\n"
   "\n"
   "# Override the default route supplied by dnsmasq, which assumes the"
+)
+
+PXESETUP=(
+  "dhcp-match=set:efi-x86_64,option:client-arch,7\n"
+  "dhcp-match=set:efi-x86_64,option:client-arch,9\n"
+  "dhcp-match=set:efi-x86,option:client-arch,6\n"
+  "dhcp-match=set:bios,option:client-arch,0\n"
+
+  "dhcp-boot=tag:efi-x86_64,efi64\/syslinux.efi\n"
+  "dhcp-boot=tag:efi-x86,efi32\/syslinux.efi\n"
+  "dhcp-boot=tag:bios,bios\/lpxelinux.0"
+)
+
+DHCP_209_SETUP=(
+  "dhcp-option-force=tag:efi-x86_64,209,pxelinux.cfg\/default\n"
+  "dhcp-option-force=tag:efi-x86,209,pxelinux.cfg\/default\n"
+  "dhcp-option-force=tag:bios,209,pxelinux.cfg\/default"
+)
+
+DHCP_210_SETUP=(
+  "dhcp-option-force=tag:efi-x86_64,210,efi64\/\n"
+  "dhcp-option-force=tag:efi-x86,210,efi32\/\n"
+  "dhcp-option-force=tag:bios,210,bios\/"
 )
 
 # keep all interface names
@@ -84,8 +107,36 @@ sed -i '0,/^#\?dhcp-range=.*/s//dhcp-range=172.27.0.1,172.27.255.254,255.254.0.0
 sed -i '0,/^#\?dhcp-range=.*::.*/s//dhcp-range=2001:db8:7b::1,2001:db8:7b::ffff,64,12h/' /etc/dnsmasq.conf
 sed -i '0,/^# Override the default route.*/s//'"${DHCP_ADDITIONAL_SETUP[*]}"'/' /etc/dnsmasq.conf
 sed -i '0,/^#\?enable-ra.*/s//enable-ra/' /etc/dnsmasq.conf
+sed -i '0,/^#\?enable-tftp.*/s//enable-tftp/' /etc/dnsmasq.conf
+sed -i '0,/^#\?tftp-root=.*/s//tftp-root=\/srv\/tftp/' /etc/dnsmasq.conf
 sed -i '0,/^#\?log-dhcp.*/s//log-dhcp/' /etc/dnsmasq.conf
 sed -i '0,/^#\?log-queries.*/s//log-queries/' /etc/dnsmasq.conf
+sed -i '0,/^#\?dhcp-boot=.*/s//'"${PXESETUP[*]}"'/' /etc/dnsmasq.conf
+sed -i '0,/^#\?dhcp-option-force=209.*/s//'"${DHCP_209_SETUP[*]}"'/' /etc/dnsmasq.conf
+sed -i '0,/^#\?dhcp-option-force=210.*/s//'"${DHCP_210_SETUP[*]}"'/' /etc/dnsmasq.conf
+
+# configure tftp
+mkdir -p /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg
+rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/bios/ /srv/tftp/bios/
+rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi32/ /srv/tftp/efi32/
+rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi64/ /srv/tftp/efi64/
+tee /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg/default <<EOF
+LABEL archlinux
+    MENU LABEL Arch Linux x86_64
+    LINUX http://IPADDR/arch/x86_64/vmlinuz-linux
+    INITRD http://IPADDR/arch/x86_64/initramfs-linux-pxe.img
+    SYSAPPEND 3
+EOF
+
+# configure http
+mkdir -p /srv/http/arch/x86_64
+mkdir -p /etc/systemd/system/darkhttpd.service.d
+tee /etc/systemd/system/darkhttpd.service.d/override.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=/usr/bin/darkhttpd /srv/http --ipv6 --addr '::' --port 80 --uid http --gid http --chroot --no-listing --mimetypes /etc/conf.d/mimetypes
+EOF
+systemctl enable darkhttpd.service
 
 # configure ntp
 tee /etc/ntp.conf <<EOF
@@ -148,7 +199,7 @@ chown step:step /srv/step/.step/pwd
 chmod 400 /srv/step/.step/pwd
 
 su -s /bin/bash - step <<EOS
-step-cli ca init --deployment-type=standalone --name=locally --dns=172.26.0.1 --dns=2001:db8:7b:1:: --dns=router.locally --address=:8443 --provisioner=step-ca@router.locally --password-file=/srv/step/.step/pwd --acme
+step-cli ca init --deployment-type=standalone --name=internal --dns=172.26.0.1 --dns=2001:db8:7b:1:: --dns=router.internal --address=:8443 --provisioner=step-ca@router.internal --password-file=/srv/step/.step/pwd --acme
 sed -i '0,/"name": "acme".*/s//"name": "acme",\n\t\t\t\t"claims": {\n\t\t\t\t\t"maxTLSCertDuration": "2160h",\n\t\t\t\t\t"defaultTLSCertDuration": "2160h"\n\t\t\t\t}/' /srv/step/.step/config/ca.json
 EOS
 
@@ -161,4 +212,6 @@ firewall-offline-cmd --zone=public --add-service=proxy-dhcp
 firewall-offline-cmd --zone=public --add-service=dhcpv6
 firewall-offline-cmd --zone=public --add-service=dns
 firewall-offline-cmd --zone=public --add-service=ntp
+firewall-offline-cmd --zone=public --add-service=tftp
+firewall-offline-cmd --zone=public --add-service=http
 firewall-offline-cmd --zone=public --add-port=8443/tcp
