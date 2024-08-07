@@ -50,10 +50,33 @@ NamePolicy=keep
 EOF
 
 # configure internal and external network
-rm /etc/systemd/network/20-wired.network
-tee /etc/systemd/network/20-external.network <<EOF
+tee /etc/systemd/network/15-eth0.network <<EOF
 [Match]
 Name=eth0
+
+[Network]
+MACVLAN=wan0
+MACVLAN=lan0
+EOF
+tee /etc/systemd/network/20-external-bridge.netdev <<EOF
+[NetDev]
+Name=wan0
+Kind=macvlan
+
+[MACVLAN]
+Mode=bridge
+EOF
+tee /etc/systemd/network/20-internal-bridge.netdev <<EOF
+[NetDev]
+Name=lan0
+Kind=macvlan
+
+[MACVLAN]
+Mode=bridge
+EOF
+tee /etc/systemd/network/20-external.network <<EOF
+[Match]
+Name=wan0
 
 [Network]
 DHCP=yes
@@ -75,30 +98,18 @@ RouteMetric=10
 [IPv6Prefix]
 RouteMetric=10
 EOF
-tee /etc/systemd/network/20-internal-bridge.netdev <<EOF
-[NetDev]
-Name=br0
-Kind=bridge
-EOF
-tee /etc/systemd/network/20-internal-bridge.network <<EOF
+tee /etc/systemd/network/20-internal.network <<EOF
 [Match]
-Name=br0
+Name=lan0
 
 [Network]
 Address=172.26.0.1/15
 Address=2001:db8:7b:1::/48
 EOF
-tee /etc/systemd/network/20-internal.network <<EOF
-[Match]
-Name=eth1
-
-[Network]
-Bridge=br0
-EOF
 
 # configure dnsmasq
 sed -i '0,/^#\?bind-interfaces.*/s//bind-interfaces/' /etc/dnsmasq.conf
-sed -i '0,/^#\?except-interface=.*/s//except-interface=eth0/' /etc/dnsmasq.conf
+sed -i '0,/^#\?except-interface=.*/s//except-interface=wan0/' /etc/dnsmasq.conf
 sed -i '0,/^#\?domain-needed.*/s//domain-needed/' /etc/dnsmasq.conf
 sed -i '0,/^#\?bogus-priv.*/s//bogus-priv/' /etc/dnsmasq.conf
 sed -i '0,/^#\?local=.*/s//local=\/internal\//' /etc/dnsmasq.conf
