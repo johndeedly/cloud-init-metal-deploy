@@ -25,14 +25,6 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
 systemctl enable cups NetworkManager
 systemctl mask NetworkManager-wait-online
 
-# do not wait for online interfaces
-mkdir -p /etc/systemd/system/NetworkManager-wait-online.service.d
-tee /etc/systemd/system/NetworkManager-wait-online.service.d/wait-online-never.conf <<EOF
-[Service]
-ExecStart=
-ExecStart=/usr/bin/nm-online -x -q
-EOF
-
 # add flathub repo to system when not present
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
