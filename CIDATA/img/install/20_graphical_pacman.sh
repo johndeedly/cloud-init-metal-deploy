@@ -28,6 +28,9 @@ systemctl mask NetworkManager-wait-online
 # add flathub repo to system when not present
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
+# install librewolf
+flatpak install --system --assumeyes --noninteractive --or-update flathub io.gitlab.librewolf-community
+
 # install betterbird
 flatpak install --system --assumeyes --noninteractive --or-update flathub eu.betterbird.Betterbird
 
@@ -66,7 +69,7 @@ XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-du
 tee -a /etc/skel/dconf-dump.ini <<EOF
 
 [/]
-favorite-apps=['org.mozilla.firefox.desktop:flatpak', 'eu.betterbird.Betterbird.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
+favorite-apps=['io.gitlab.librewolf-community.desktop:flatpak', 'eu.betterbird.Betterbird.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
 [desktop/background]
 picture-uri='file:///usr/share/backgrounds/elementaryos-default'
