@@ -9,12 +9,23 @@ fi
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd
 
 DHCP_ADDITIONAL_SETUP=(
-  "dhcp-option=option:dns-server,172.26.0.1\n"
-  "dhcp-option=option6:dns-server,[2001:db8:7b:1::]\n"
-  "dhcp-option=option:ntp-server,172.26.0.1\n"
-  "dhcp-option=option6:ntp-server,[2001:db8:7b:1::]\n"
+  "dhcp-option=user,option:dns-server,172.26.0.1\n"
+  "dhcp-option=user,option6:dns-server,[2001:db8:7b:1::]\n"
+  "dhcp-option=user,option:ntp-server,172.26.0.1\n"
+  "dhcp-option=user,option6:ntp-server,[2001:db8:7b:1::]\n"
+  "dhcp-option=guest,option:dns-server,172.28.0.1\n"
+  "dhcp-option=guest,option6:dns-server,[2001:db8:7c:1::]\n"
+  "dhcp-option=guest,option:ntp-server,172.28.0.1\n"
+  "dhcp-option=guest,option6:ntp-server,[2001:db8:7c:1::]\n"
   "\n"
   "# Override the default route supplied by dnsmasq, which assumes the"
+)
+
+DHCP_RANGES=(
+  "dhcp-range=user,172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
+  "dhcp-range=guest,172.29.0.1,172.29.255.254,255.254.0.0,12h\n"
+  "dhcp-range=user,2001:db8:7b::1,2001:db8:7b::ffff,64,12h\n"
+  "dhcp-range=guest,2001:db8:7c::1,2001:db8:7c::ffff,64,12h"
 )
 
 PXESETUP=(
@@ -49,7 +60,7 @@ OriginalName=*
 NamePolicy=keep
 EOF
 
-# configure internal and external network
+# eth0 is bridged to macvlan devices wan0 and lan0
 tee /etc/systemd/network/15-eth0.network <<EOF
 [Match]
 Name=eth0
@@ -57,8 +68,15 @@ Name=eth0
 [Network]
 MACVLAN=wan0
 MACVLAN=lan0
+LinkLocalAddressing=no
+LLDP=no
+EmitLLDP=no
+IPv6AcceptRA=no
+IPv6SendRA=no
 EOF
-tee /etc/systemd/network/20-external-bridge.netdev <<EOF
+
+# define virtual devices
+tee /etc/systemd/network/15-wan0-bridge.netdev <<EOF
 [NetDev]
 Name=wan0
 Kind=macvlan
@@ -66,7 +84,7 @@ Kind=macvlan
 [MACVLAN]
 Mode=bridge
 EOF
-tee /etc/systemd/network/20-internal-bridge.netdev <<EOF
+tee /etc/systemd/network/15-lan0-bridge.netdev <<EOF
 [NetDev]
 Name=lan0
 Kind=macvlan
@@ -74,7 +92,25 @@ Kind=macvlan
 [MACVLAN]
 Mode=bridge
 EOF
-tee /etc/systemd/network/20-external.network <<EOF
+tee /etc/systemd/network/15-lan0-vlan-user.netdev <<EOF
+[NetDev]
+Name=user
+Kind=vlan
+
+[VLAN]
+Id=16
+EOF
+tee /etc/systemd/network/15-lan0-vlan-guest.netdev <<EOF
+[NetDev]
+Name=guest
+Kind=vlan
+
+[VLAN]
+Id=32
+EOF
+
+# configure wan0, lan0 and vlans local and guest
+tee /etc/systemd/network/20-wan0.network <<EOF
 [Match]
 Name=wan0
 
@@ -98,13 +134,36 @@ RouteMetric=10
 [IPv6Prefix]
 RouteMetric=10
 EOF
-tee /etc/systemd/network/20-internal.network <<EOF
+tee /etc/systemd/network/20-lan0.network <<EOF
 [Match]
 Name=lan0
 
 [Network]
+VLAN=user
+VLAN=guest
+LinkLocalAddressing=no
+LLDP=no
+EmitLLDP=no
+IPv6AcceptRA=no
+IPv6SendRA=no
+EOF
+tee /etc/systemd/network/20-lan0-vlan-user.network <<EOF
+[Match]
+Name=user
+
+[Network]
 Address=172.26.0.1/15
 Address=2001:db8:7b:1::/48
+LinkLocalAddressing=no
+EOF
+tee /etc/systemd/network/20-lan0-vlan-guest.network <<EOF
+[Match]
+Name=guest
+
+[Network]
+Address=172.28.0.1/15
+Address=2001:db8:7c:1::/48
+LinkLocalAddressing=no
 EOF
 
 # configure dnsmasq
@@ -114,8 +173,7 @@ sed -i '0,/^#\?domain-needed.*/s//domain-needed/' /etc/dnsmasq.conf
 sed -i '0,/^#\?bogus-priv.*/s//bogus-priv/' /etc/dnsmasq.conf
 sed -i '0,/^#\?local=.*/s//local=\/internal\//' /etc/dnsmasq.conf
 sed -i '0,/^#\?domain=.*/s//domain=internal/' /etc/dnsmasq.conf
-sed -i '0,/^#\?dhcp-range=.*/s//dhcp-range=172.27.0.1,172.27.255.254,255.254.0.0,12h/' /etc/dnsmasq.conf
-sed -i '0,/^#\?dhcp-range=.*::.*/s//dhcp-range=2001:db8:7b::1,2001:db8:7b::ffff,64,12h/' /etc/dnsmasq.conf
+sed -i '0,/^#\?dhcp-range=.*/s//'"${DHCP_RANGES[*]}"'/' /etc/dnsmasq.conf
 sed -i '0,/^# Override the default route.*/s//'"${DHCP_ADDITIONAL_SETUP[*]}"'/' /etc/dnsmasq.conf
 sed -i '0,/^#\?enable-ra.*/s//enable-ra/' /etc/dnsmasq.conf
 sed -i '0,/^#\?enable-tftp.*/s//enable-tftp/' /etc/dnsmasq.conf
