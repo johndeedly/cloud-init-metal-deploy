@@ -10,13 +10,13 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmas
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=user,option:dns-server,172.26.0.1\n"
-  "dhcp-option=user,option6:dns-server,[2001:db8:7b::26:1]\n"
+  "dhcp-option=user,option6:dns-server,[fdd5:a799:9326:171d::1]\n"
   "dhcp-option=user,option:ntp-server,172.26.0.1\n"
-  "dhcp-option=user,option6:ntp-server,[2001:db8:7b::26:1]\n"
+  "dhcp-option=user,option6:ntp-server,[fdd5:a799:9326:171d::1]\n"
   "dhcp-option=guest,option:dns-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:dns-server,[2001:db8:7b::28:1]\n"
+  "dhcp-option=guest,option6:dns-server,[fd97:6274:3c67:7974::1]\n"
   "dhcp-option=guest,option:ntp-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:ntp-server,[2001:db8:7b::28:1]\n"
+  "dhcp-option=guest,option6:ntp-server,[fd97:6274:3c67:7974::1]\n"
   "\n"
   "# Override the default route supplied by dnsmasq, which assumes the"
 )
@@ -24,8 +24,8 @@ DHCP_ADDITIONAL_SETUP=(
 DHCP_RANGES=(
   "dhcp-range=user,172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
   "dhcp-range=guest,172.29.0.1,172.29.255.254,255.254.0.0,12h\n"
-  "dhcp-range=user,::1,::ffff,constructor:user,64,12h\n"
-  "dhcp-range=guest,::1,::ffff,constructor:guest,64,12h"
+  "dhcp-range=user,::1,::ffff,constructor:user,ra-names,64,12h\n"
+  "dhcp-range=guest,::1,::ffff,constructor:guest,ra-names,64,12h"
 )
 
 PXESETUP=(
