@@ -10,13 +10,13 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmas
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=user,option:dns-server,172.26.0.1\n"
-  "dhcp-option=user,option6:dns-server,[2001:db8:7b:1::]\n"
+  "dhcp-option=user,option6:dns-server,[2001:db8:7b::26:1]\n"
   "dhcp-option=user,option:ntp-server,172.26.0.1\n"
-  "dhcp-option=user,option6:ntp-server,[2001:db8:7b:1::]\n"
+  "dhcp-option=user,option6:ntp-server,[2001:db8:7b::26:1]\n"
   "dhcp-option=guest,option:dns-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:dns-server,[2001:db8:7c:1::]\n"
+  "dhcp-option=guest,option6:dns-server,[2001:db8:7b::28:1]\n"
   "dhcp-option=guest,option:ntp-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:ntp-server,[2001:db8:7c:1::]\n"
+  "dhcp-option=guest,option6:ntp-server,[2001:db8:7b::28:1]\n"
   "\n"
   "# Override the default route supplied by dnsmasq, which assumes the"
 )
@@ -24,8 +24,8 @@ DHCP_ADDITIONAL_SETUP=(
 DHCP_RANGES=(
   "dhcp-range=user,172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
   "dhcp-range=guest,172.29.0.1,172.29.255.254,255.254.0.0,12h\n"
-  "dhcp-range=user,2001:db8:7b::1,2001:db8:7b::ffff,64,12h\n"
-  "dhcp-range=guest,2001:db8:7c::1,2001:db8:7c::ffff,64,12h"
+  "dhcp-range=user,2001:db8:7b::27:1,2001:db8:7b::27:fffe,111,12h\n"
+  "dhcp-range=guest,2001:db8:7c::29:1,2001:db8:7c::29:fffe,111,12h"
 )
 
 PXESETUP=(
@@ -120,7 +120,6 @@ MulticastDNS=yes
 IPv4Forwarding=yes
 IPv6Forwarding=yes
 IPMasquerade=both
-IPv6PrivacyExtensions=yes
 
 [DHCPv4]
 RouteMetric=10
@@ -153,7 +152,7 @@ Name=user
 
 [Network]
 Address=172.26.0.1/15
-Address=2001:db8:7b:1::/48
+Address=2001:db8:7b::26:1/111
 LinkLocalAddressing=no
 EOF
 tee /etc/systemd/network/20-lan0-vlan-guest.network <<EOF
@@ -162,7 +161,7 @@ Name=guest
 
 [Network]
 Address=172.28.0.1/15
-Address=2001:db8:7c:1::/48
+Address=2001:db8:7b::28:1/111
 LinkLocalAddressing=no
 EOF
 
