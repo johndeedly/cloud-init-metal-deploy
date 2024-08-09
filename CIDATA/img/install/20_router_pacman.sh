@@ -24,8 +24,8 @@ DHCP_ADDITIONAL_SETUP=(
 DHCP_RANGES=(
   "dhcp-range=user,172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
   "dhcp-range=guest,172.29.0.1,172.29.255.254,255.254.0.0,12h\n"
-  "dhcp-range=user,2001:db8:7b::27:1,2001:db8:7b::27:fffe,111,12h\n"
-  "dhcp-range=guest,2001:db8:7c::29:1,2001:db8:7c::29:fffe,111,12h"
+  "dhcp-range=user,::1,::ffff,constructor:user,64,12h\n"
+  "dhcp-range=guest,::1,::ffff,constructor:guest,64,12h"
 )
 
 PXESETUP=(
@@ -152,8 +152,7 @@ Name=user
 
 [Network]
 Address=172.26.0.1/15
-Address=2001:db8:7b::26:1/111
-LinkLocalAddressing=no
+Address=fdd5:a799:9326:171d::1/64
 EOF
 tee /etc/systemd/network/20-lan0-vlan-guest.network <<EOF
 [Match]
@@ -161,8 +160,7 @@ Name=guest
 
 [Network]
 Address=172.28.0.1/15
-Address=2001:db8:7b::28:1/111
-LinkLocalAddressing=no
+Address=fd97:6274:3c67:7974::1/64
 EOF
 
 # configure dnsmasq
