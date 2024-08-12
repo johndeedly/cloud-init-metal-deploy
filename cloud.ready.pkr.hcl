@@ -164,7 +164,8 @@ mkdir -p "/tmp/swtpm.0" "share"
 /usr/bin/qemu-system-x86_64 \\
   -name cloud_ready-x86_64 \\
   -machine type=q35,accel=kvm \\
-  -vga virtio \\
+  -device virtio-vga-gl \\
+  -display gtk,gl=on \\
   -cpu host \\
   -drive file=${local.build_name_qemu},if=virtio,cache=writeback,discard=unmap,detect-zeroes=unmap,format=qcow2 \\
   -device tpm-tis,tpmdev=tpm0 -tpmdev emulator,id=tpm0,chardev=vtpm -chardev socket,id=vtpm,path=/tmp/swtpm.0/vtpm.sock \\
@@ -177,6 +178,7 @@ mkdir -p "/tmp/swtpm.0" "share"
   -usbdevice mouse -usbdevice keyboard \\
   -rtc base=utc,clock=host
 EOF
+# -vga virtio instead of virtio-vga-gl and gtk,gl=on for non-accelerated graphics
 # -display none, -daemonize, hostfwd=::12345-:22 for running as a daemonized server
 chmod +x output/cloud_ready/cloud_ready-x86_64.run.sh
 EOS
