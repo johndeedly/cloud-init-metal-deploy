@@ -849,12 +849,13 @@ write_files:
           bash-completion ncdu pv mc lfm fzf \
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
-          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
+          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
+          libnss-ldap libpam-ldap ldap-utils nslcd
         download_starship
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           luajit libluajit-5.1-dev lua-mpack lua-lpeg libunibilium-dev libmsgpack-dev libtermkey-dev
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
+        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld nslcd
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
           pacman-contrib starship base-devel neovim yq \
@@ -862,8 +863,9 @@ write_files:
           bash-completion ncdu pv mc lf fzf \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
           openssh wireguard-tools nfs-utils \
-          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils
-        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
+          openldap nss-pam-ldapd
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld nslcd
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum install -y \
           systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
@@ -871,12 +873,13 @@ write_files:
           bash-completion mc \
           lshw libxml2 jq polkit man-db \
           openssh wireguard-tools nfs-utils \
-          cifs-utils unzip rsync xdg-user-dirs xdg-utils
+          cifs-utils unzip rsync xdg-user-dirs xdg-utils \
+          openldap openldap-clients nss-pam-ldapd
         download_starship
         LC_ALL=C yes | LC_ALL=C yum install -y \
           compat-lua-libs libtermkey libtree-sitter libvterm luajit luajit2.1-luv msgpack unibilium xsel
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved sshd firewalld
+        systemctl enable systemd-networkd systemd-resolved sshd firewalld nslcd
       fi
 
       # disable hibernation and hybrid-sleep modes
@@ -911,7 +914,41 @@ write_files:
       # see https://wiki.archlinux.org/title/LDAP_authentication for more details
       # TODO: on ubuntu system-login is missing - investigate!
       if [ -f /etc/pam.d/system-login ]; then
-          sed -i 's/session\s\+required\s\+pam_env.so/session    required   pam_env.so\nsession    required   pam_mkhomedir.so     skel=\/etc\/skel umask=0077/' /etc/pam.d/system-login
+          sed -i 's/^\(session.*pam_env.so\)/\1\nsession    required   pam_mkhomedir.so     skel=\/etc\/skel umask=0077/' /etc/pam.d/system-login
+      fi
+      
+      echo ':: enable optional ldap pam and nss authentication, disabling nss by commenting out connection string'
+      echo ':: to re-enable nss, provide a valid ldap connection string'
+      if [ -f /etc/pam.d/system-auth ]; then
+          sed -i '0,/^auth/s//auth       sufficient                  pam_ldap.so\nauth/' /etc/pam.d/system-auth
+          sed -i '0,/^account/s//account    sufficient                  pam_ldap.so\naccount/' /etc/pam.d/system-auth
+          sed -i '0,/^password/s//password   sufficient                  pam_ldap.so\npassword/' /etc/pam.d/system-auth
+          sed -i '0,/^session/s//session    optional                    pam_ldap.so\nsession/' /etc/pam.d/system-auth
+      fi
+      if [ -f /etc/pam.d/su ]; then
+          sed -i '0,/pam_rootok.so/s//pam_rootok.so\nauth            sufficient      pam_ldap.so/' /etc/pam.d/su
+          sed -i '0,//s//pam_unix.so use_first_pass/' /etc/pam.d/su
+          sed -i 's/^\(auth.*pam_unix.so\)/\1 use_first_pass/' /etc/pam.d/su
+          sed -i '0,/^account/s//account         sufficient      pam_ldap.so\naccount/' /etc/pam.d/su
+          sed -i '0,/^session/s//session         sufficient      pam_ldap.so\nsession/' /etc/pam.d/su
+      fi
+      if [ -f /etc/pam.d/su-l ]; then
+          sed -i '0,/pam_rootok.so/s//pam_rootok.so\nauth            sufficient      pam_ldap.so/' /etc/pam.d/su-l
+          sed -i 's/^\(auth.*pam_unix.so\)/\1 use_first_pass/' /etc/pam.d/su-l
+          sed -i '0,/^account/s//account         sufficient      pam_ldap.so\naccount/' /etc/pam.d/su-l
+          sed -i '0,/^session/s//session         sufficient      pam_ldap.so\nsession/' /etc/pam.d/su-l
+      fi
+      if [ -f /etc/nslcd.conf ]; then
+        chmod 0600 /etc/nslcd.conf
+        sed -i 's/^#\?uri/#uri/' /etc/nslcd.conf
+      fi
+      if [ -f /etc/nsswitch.conf ]; then
+          sed -i 's/^\(passwd.*\)/\1 ldap/' /etc/nsswitch.conf
+          sed -i 's/^\(group.*\)/\1 ldap/' /etc/nsswitch.conf
+          sed -i 's/^\(shadow.*\)/\1 ldap/' /etc/nsswitch.conf
+      fi
+      if [ -f /etc/pam.d/sudo ]; then
+          sed -i 's/^\(auth.*pam_unix.so\)/auth      sufficient    pam_ldap.so\n\1 try_first_pass/' /etc/pam.d/sudo
       fi
       
       # search for additional userscripts 
