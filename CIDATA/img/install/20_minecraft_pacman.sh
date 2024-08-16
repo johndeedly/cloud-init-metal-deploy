@@ -5,7 +5,7 @@
 # from my other projects to be copied over. please be patient...
 
 # remove line to enable build
-#exit 0
+exit 0
 if ! [ -f /bin/pacman ]; then
     exit 0
 fi
