@@ -41,7 +41,7 @@ if ! [ -d CIDATA/img ]; then
     mkdir -p CIDATA/img
 fi
 
-if ! [ -f "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2*" ]; then
+if ! [ -f "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2" ]; then
     CLOUDHASH=$(curl -sL "http://ftp.halifax.rwth-aachen.de/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256")
 
     log_text "Arch-Linux-x86_64-cloudimg.qcow2"
