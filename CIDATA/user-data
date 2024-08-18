@@ -202,7 +202,7 @@ write_files:
 
       # resize main ext4/btrfs partition
       # create cidata partition at the end of the disk
-      ROOT_PART=( $(lsblk -no PATH,PARTN,PARTLABEL,LABEL,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
+      ROOT_PART=( $(lsblk -no PATH,PARTN,FSTYPE,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
       echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
         name "${ROOT_PART[1]}" root \
@@ -215,11 +215,13 @@ write_files:
 
       # resize main filesystem
       if [ "${ROOT_PART[2]}" == "btrfs" ] || [ "${ROOT_PART[2]}" == "BTRFS" ]; then
+        echo ":: resize root btrfs"
         mount "${ROOT_PART[0]}" /mnt
         btrfs filesystem resize max /mnt
         sync
         umount -l /mnt
       elif [ "${ROOT_PART[2]}" == "ext4" ] || [ "${ROOT_PART[2]}" == "EXT4" ]; then
+        echo ":: resize root ext4"
         e2fsck -y -f "${ROOT_PART[0]}"
         resize2fs "${ROOT_PART[0]}"
       fi
