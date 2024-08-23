@@ -684,13 +684,11 @@ write_files:
       if [ -e /bin/apt ]; then
         dpkg-reconfigure --frontend=noninteractive keyboard-configuration
         dpkg-reconfigure --frontend=noninteractive console-setup
-        if grep -q Ubuntu /proc/version; then
-          mkdir -p /etc/systemd/system/console-setup.service.d
-          tee /etc/systemd/system/console-setup.service.d/override.conf <<EOF
+        mkdir -p /etc/systemd/system/console-setup.service.d
+        tee /etc/systemd/system/console-setup.service.d/override.conf <<EOF
       [Service]
       ExecStartPost=/bin/setupcon
       EOF
-        fi
       elif [ -e /bin/pacman ]; then
         loadkeys de-latin1 || true
       elif [ -e /bin/yum ]; then
