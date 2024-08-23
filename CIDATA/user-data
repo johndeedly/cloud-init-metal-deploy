@@ -62,7 +62,7 @@ write_files:
     content: |
       [Service]
       ExecStart=
-      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
     owner: 'root:root'
     permissions: '0644'
   # sshd config -> allow root, password auth, use pam
@@ -118,6 +118,10 @@ write_files:
 
       exec &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      # wait online
+      echo ":: wait for any interface to be online"
+      /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+
       # Generate locales
       sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
       echo "LANG=de_DE.UTF-8" > /etc/locale.conf

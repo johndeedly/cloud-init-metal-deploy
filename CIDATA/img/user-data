@@ -65,7 +65,7 @@ write_files:
     content: |
       [Service]
       ExecStart=
-      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --any
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
     owner: 'root:root'
     permissions: '0644'
   # sshd config -> allow root, password auth, use pam
@@ -625,6 +625,10 @@ write_files:
 
       exec &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
       
+      # wait online
+      echo ":: wait for any interface to be online"
+      /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+
       # initialize pacman keyring
       if [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm archlinux-keyring
