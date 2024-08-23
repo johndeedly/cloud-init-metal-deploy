@@ -19,6 +19,11 @@ bootcmd:
   # stop and disable reflector to be able to change the pacman mirrorlist
   - systemctl stop reflector.service reflector.timer
   - systemctl disable reflector.service reflector.timer
+  - systemctl mask reflector.service reflector.timer
+  # improve boot time by not waiting for ntp
+  - systemctl stop systemd-time-wait-sync.service
+  - systemctl disable systemd-time-wait-sync.service
+  - systemctl mask time-sync.target
   # time travel the repositories back to the build day of the iso
   # the path year/month/day is resolved through the file "/version" in the archiso ram fs
   - echo "Server=https://archive.archlinux.org/repos/$(head -1 /version | sed -e 's|\.|/|g')/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
