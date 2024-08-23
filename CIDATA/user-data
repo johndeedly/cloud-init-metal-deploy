@@ -161,6 +161,36 @@ write_files:
         sleep 5
       done
 
+      # Force update of all existing keys in the pacman keyring
+      # adapted from 'archlinux-keyring-wkd-sync' (less verbose)
+      readonly homedir="$(pacman-conf GPGDir)"
+      gpg_locate_external=(
+        # force update a key using WKD
+        gpg
+        --homedir
+        "$homedir"
+        --quiet
+        --no-permission-warning
+        --auto-key-locate
+        "clear,nodefault,wkd"
+        --locate-external-keys
+      )
+      fingerprint_mboxes="$(
+        gpg --homedir "$homedir" --no-permission-warning --list-keys --list-options show-only-fpr-mbox
+      )"
+      old_fingerprints="$(
+        gpg --homedir "$homedir" --no-permission-warning --list-keys --with-colons | \
+          awk -F: '$1 == "pub" && $2 ~ /-|q|r/ { getline; print $10 }'
+      )"
+      for domain_match in '@master-key.archlinux.org$' '@archlinux.org$'; do
+        while read -ra fpr_email; do
+          if [[ ${fpr_email[1]} =~ $domain_match && ! "$old_fingerprints" =~ ${fpr_email[0]} ]]; then
+            printf ":: refreshing key %s with UID %s...\n" "${fpr_email[0]}" "${fpr_email[1]}"
+            "${gpg_locate_external[@]}" "${fpr_email[1]}" >/dev/null 2>&1 || printf "!! error updating key %s\n" "${fpr_email[0]}"
+          fi
+        done <<< "$fingerprint_mboxes"
+      done
+
       LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base arch-install-scripts
 
       if [ -f /cidata/meta-data ] && [ -d /cidata/img ]; then
