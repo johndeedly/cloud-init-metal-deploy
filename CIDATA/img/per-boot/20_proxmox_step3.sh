@@ -12,6 +12,10 @@ fi
 
 exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
 
+# wait online
+echo ":: wait for any interface to be online"
+/usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+
 # install the main proxmox packages
 LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt install proxmox-ve postfix open-iscsi chrony
 
