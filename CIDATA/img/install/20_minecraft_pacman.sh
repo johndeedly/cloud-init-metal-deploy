@@ -100,6 +100,9 @@ echo ":: HuskHomes"
 curl -sL --progress-bar -o /srv/papermc/plugins/HuskHomes-Paper-4.7.jar 'https://hangarcdn.papermc.io/plugins/William278/HuskHomes/versions/4.7/PAPER/HuskHomes-Paper-4.7.jar'
 echo ":: CommandControl"
 curl -sL --progress-bar -o /srv/papermc/plugins/commander-3.1.0-all.jar 'https://hangarcdn.papermc.io/plugins/TheNextLvl/CommandControl/versions/3.1.0/PAPER/commander-3.1.0-all.jar'
+echo ":: Fast leaf decay"
+curl -sL --progress-bar -o /srv/papermc/plugins/fast-leaf-decay-1.0.0.jar 'https://cdn.modrinth.com/data/PcKMtamx/versions/YL1kzSr7/fast-leaf-decay-1.0.0.jar'
+
 chown -R papermc:papermc /srv/papermc/plugins
 
 # start server once more
