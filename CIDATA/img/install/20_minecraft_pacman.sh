@@ -74,8 +74,6 @@ curl -sL --progress-bar -o /srv/papermc/plugins/vane-all-plugins.zip 'https://gi
 pushd /srv/papermc/plugins
   unzip vane-all-plugins.zip
   rm vane-all-plugins.zip
-  rm vane-admin-*.jar
-  rm vane-permissions-*.jar
 popd
 echo ":: InvSee++"
 curl -sL --progress-bar -o /srv/papermc/plugins/InvSee++.jar 'https://github.com/Jannyboy11/InvSee-plus-plus/releases/download/v0.29.5/InvSee++.jar'
@@ -113,6 +111,9 @@ systemctl stop papermc
 # disable autostop of server
 pushd /srv/papermc/plugins/vane-admin
 yq -iy '.autostop.enabled=false' config.yml
+popd
+pushd /srv/papermc/plugins/vane-permissions
+yq -iy '.enabled=false' config.yml
 popd
 pushd /srv/papermc/plugins/vane-core
 yq -iy '.resource_pack.force=false' config.yml
