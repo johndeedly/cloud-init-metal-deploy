@@ -263,6 +263,12 @@ write_files:
         echo ":: resize root ext4"
         e2fsck -y -f "${ROOT_PART[0]}"
         resize2fs "${ROOT_PART[0]}"
+      elif [ "${ROOT_PART[2]}" == "xfs" ] || [ "${ROOT_PART[2]}" == "XFS" ]; then
+        echo ":: resize root xfs"
+        mount "${ROOT_PART[0]}" /mnt
+        xfs_growfs -d /mnt
+        sync
+        umount -l /mnt
       fi
 
       # write the cidata iso to the cidata partition on disk
