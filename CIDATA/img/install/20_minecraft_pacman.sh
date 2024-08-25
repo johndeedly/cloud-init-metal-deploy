@@ -111,6 +111,7 @@ systemctl stop papermc
 # disable autostop of server
 pushd /srv/papermc/plugins/vane-admin
 yq -iy '.autostop.enabled=false' config.yml
+yq -iy '.chat_message_formatter.enabled=false' config.yml
 popd
 pushd /srv/papermc/plugins/vane-permissions
 yq -iy '.enabled=false' config.yml
