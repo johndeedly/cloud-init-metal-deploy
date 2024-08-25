@@ -71,6 +71,12 @@ echo ":: ViaRewind"
 curl -sL --progress-bar -o /srv/papermc/plugins/ViaRewind-4.0.2.jar 'https://hangarcdn.papermc.io/plugins/ViaVersion/ViaRewind/versions/4.0.2/PAPER/ViaRewind-4.0.2.jar'
 echo ":: Vane"
 curl -sL --progress-bar -o /srv/papermc/plugins/vane-all-plugins.zip 'https://github.com/oddlama/vane/releases/download/v1.14.0/all-plugins.zip'
+pushd /srv/papermc/plugins
+  unzip vane-all-plugins.zip
+  rm vane-all-plugins.zip
+  rm vane-admin-*.jar
+  rm vane-permissions-*.jar
+popd
 echo ":: InvSee++"
 curl -sL --progress-bar -o /srv/papermc/plugins/InvSee++.jar 'https://github.com/Jannyboy11/InvSee-plus-plus/releases/download/v0.29.5/InvSee++.jar'
 echo ":: Stargate"
@@ -103,6 +109,15 @@ systemctl start papermc
 sleep 5
 systemctl stop papermc
 # server is stopped after this point
+
+# disable autostop of server
+pushd /srv/papermc/plugins/vane-admin
+yq -iy '.autostop.enabled=false' config.yml
+popd
+pushd /srv/papermc/plugins/vane-core
+yq -iy '.resource_pack.force=false' config.yml
+yq -iy '.resource_pack.message_delaying.enabled=false' config.yml
+popd
 
 # remove possible broken world folders to get one generated on real first startup
 /usr/bin/rm -r /srv/papermc/world*/
