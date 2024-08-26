@@ -831,7 +831,8 @@ write_files:
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           luajit libluajit-5.1-dev lua-mpack lua-lpeg libunibilium-dev libmsgpack-dev libtermkey-dev
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld nslcd
+        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
+        systemctl disable nslcd
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
           pacman-contrib starship base-devel neovim yq \
@@ -841,7 +842,8 @@ write_files:
           openssh wireguard-tools nfs-utils \
           cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
           openldap nss-pam-ldapd
-        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld nslcd
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
+        systemctl disable nslcd
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C yum install -y \
           systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
@@ -855,7 +857,8 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum install -y \
           compat-lua-libs libtermkey libtree-sitter libvterm luajit luajit2.1-luv msgpack unibilium xsel
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved sshd firewalld nslcd
+        systemctl enable systemd-networkd systemd-resolved sshd firewalld
+        systemctl disable nslcd
       fi
 
       # disable hibernation and hybrid-sleep modes
