@@ -176,7 +176,7 @@ write_files:
         --locate-external-keys
       )
       fingerprint_mboxes="$(
-        gpg --homedir "$homedir" --no-permission-warning --list-keys --list-options show-only-fpr-mbox
+        gpg --homedir "$homedir" --no-permission-warning --list-keys --list-options show-only-fpr-mbox | uniq
       )"
       old_fingerprints="$(
         gpg --homedir "$homedir" --no-permission-warning --list-keys --with-colons | \
