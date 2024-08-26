@@ -123,6 +123,9 @@ pushd /srv/papermc/plugins/vane-core
 yq -iy '.resource_pack.force=false' config.yml
 yq -iy '.resource_pack.message_delaying.enabled=false' config.yml
 popd
+pushd /srv/papermc/config
+yq -iy '.lootables.auto-replenish=true' paper-world-defaults.yml
+popd
 
 # remove possible broken world folders to get one generated on real first startup
 /usr/bin/rm -r /srv/papermc/world*/
