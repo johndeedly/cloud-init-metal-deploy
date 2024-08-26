@@ -702,32 +702,7 @@ write_files:
             LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install qemu-guest-agent
             ;;
           oracle)
-            if grep -q Debian /proc/version; then
-              tee -a /etc/apt/sources.list <<EOF
-      
-      # Debian Unstable "Sid"
-      deb http://deb.debian.org/debian/ sid main contrib non-free
-      EOF
-              tee /etc/apt/preferences <<EOF
-      Package: *
-      Pin: release a=stable
-      Pin-Priority: 700
-
-      Package: *
-      Pin: release a=testing
-      Pin-Priority: 650
-
-      Package: *
-      Pin: release a=sid
-      Pin-Priority: 600
-
-      Package: *
-      Pin: release a=unstable
-      Pin-Priority: 600
-      EOF
-              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
-              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install -t sid virtualbox-guest-x11
-            elif grep -q Ubuntu /proc/version; then
+            if grep -q Ubuntu /proc/version; then
               LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install virtualbox-guest-x11
             fi
             ;;
