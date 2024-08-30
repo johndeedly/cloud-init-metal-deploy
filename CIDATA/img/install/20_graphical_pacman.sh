@@ -64,62 +64,68 @@ cp /tmp/policies.json /usr/lib/librewolf/distribution/policies.json
 rm /tmp/policies.json
 
 # configure cinnamon desktop
-XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-dump.ini
-tee -a /etc/skel/dconf-dump.ini <<EOF
+mkdir -p /etc/dconf/profile
+tee /etc/dconf/profile/user <<EOF
+user-db:user
+system-db:local
+EOF
+dconf update
 
-[/]
-favorite-apps=['io.gitlab.librewolf-community.desktop:flatpak', 'eu.betterbird.Betterbird.desktop:flatpak', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
+mkdir -p /etc/dconf/db/local.d
+tee /etc/dconf/db/local.d/99-userdefaults <<EOF
+[org/cinnamon]
+favorite-apps=['librewolf.desktop', 'betterbird.desktop', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
-[desktop/background]
+[org/cinnamon/desktop/background]
 picture-uri='file:///usr/share/backgrounds/elementaryos-default'
 picture-options='zoom'
 primary-color='000000'
 secondary-color='000000'
 draw-background=true
 
-[desktop/interface]
+[org/cinnamon/desktop/interface]
 icon-theme='elementary'
 
-[desktop/applications/calculator]
+[org/cinnamon/desktop/applications/calculator]
 exec='qalculate-gtk'
 
-[desktop/applications/terminal]
+[org/cinnamon/desktop/applications/terminal]
 exec='kitty'
 exec-arg='--'
 
-[desktop/keybindings]
+[org/cinnamon/desktop/keybindings]
 custom-list=['__dummy__', 'custom0', 'custom1', 'custom2', 'custom3', 'custom4']
 looking-glass-keybinding=@as []
 pointer-next-monitor=@as []
 pointer-previous-monitor=@as []
 show-desklets=@as []
 
-[desktop/keybindings/custom-keybindings/custom0]
+[org/cinnamon/desktop/keybindings/custom-keybindings/custom0]
 binding=['<Shift><Super>Return', '<Shift><Super>KP_Enter']
 command='wofi --fork --normal-window --insensitive --allow-images --allow-markup --show drun'
 name='wofi'
 
-[desktop/keybindings/custom-keybindings/custom1]
+[org/cinnamon/desktop/keybindings/custom-keybindings/custom1]
 binding=['<Super>p', 'XF86Display']
 command='arandr'
 name='arandr'
 
-[desktop/keybindings/custom-keybindings/custom2]
+[org/cinnamon/desktop/keybindings/custom-keybindings/custom2]
 binding=['<Alt>e']
 command='kitty /usr/bin/lf'
 name='lf'
 
-[desktop/keybindings/custom-keybindings/custom3]
+[org/cinnamon/desktop/keybindings/custom-keybindings/custom3]
 binding=['<Alt>w']
 command='flatpak run org.chromium.Chromium'
 name='chromium'
 
-[desktop/keybindings/custom-keybindings/custom4]
+[org/cinnamon/desktop/keybindings/custom-keybindings/custom4]
 binding=['<Control><Shift>e']
 command='ibus emoji'
 name='emoji picker'
 
-[desktop/keybindings/media-keys]
+[org/cinnamon/desktop/keybindings/media-keys]
 calculator=['<Super>period']
 email=@as []
 home=['<Super>e']
@@ -128,7 +134,7 @@ search=@as []
 terminal=['<Super>Return', '<Super>KP_Enter']
 www=['<Super>w']
 
-[desktop/keybindings/wm]
+[org/cinnamon/desktop/keybindings/wm]
 activate-window-menu=@as []
 begin-move=@as []
 begin-resize=@as []
@@ -185,17 +191,21 @@ switch-windows-backward=['<Shift><Super>Tab']
 toggle-maximized=['<Super>f']
 unmaximize=@as []
 
-[settings-daemon/plugins/power]
+[org/cinnamon/settings-daemon/plugins/power]
 button-power='shutdown'
 
-[muffin]
+[org/cinnamon/muffin]
 placement-mode='center'
 
-[desktop/wm/preferences]
+[org/cinnamon/desktop/wm/preferences]
 mouse-button-modifier='<Super>'
 EOF
-dbus-run-session -- bash -c 'XDG_CONFIG_HOME=/etc/skel/.config dconf load /org/cinnamon/ < /etc/skel/dconf-dump.ini'
-rm /etc/skel/dconf-dump.ini
+dconf update
+
+# logged in root user dconf session reset
+dconf list /org/cinnamon/
+dconf reset -f /org/cinnamon/
+
 
 # install code-oss extensions for user"
 ( HOME=/etc/skel /bin/bash -c '
