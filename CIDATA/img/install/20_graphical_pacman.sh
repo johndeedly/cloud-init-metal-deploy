@@ -18,7 +18,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
-  pamac flatpak gnome-keyring \
+  pamac flatpak gnome-keyring librewolf betterbird \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
 # enable some services
@@ -27,12 +27,6 @@ systemctl mask NetworkManager-wait-online
 
 # add flathub repo to system when not present
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-# install librewolf
-flatpak install --system --assumeyes --noninteractive --or-update flathub io.gitlab.librewolf-community
-
-# install betterbird
-flatpak install --system --assumeyes --noninteractive --or-update flathub eu.betterbird.Betterbird
 
 # set slick greeter as default
 sed -i 's/^#\?greeter-show-manual-login=.*/greeter-show-manual-login=true/' /etc/lightdm/lightdm.conf
@@ -63,6 +57,11 @@ EOF
 tee /etc/skel/.Xmodmap <<EOF
 keysym Menu = Super_R
 EOF
+
+# configure librewolf
+jq '.policies.Extensions.Install |= . + ["https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/","https://addons.mozilla.org/firefox/downloads/latest/keepassxc-browser/","https://addons.mozilla.org/firefox/downloads/latest/single-file/","https://addons.mozilla.org/firefox/downloads/latest/sponsorblock/","https://addons.mozilla.org/firefox/downloads/latest/forget_me_not/","https://addons.mozilla.org/firefox/downloads/latest/return-youtube-dislikes/","https://addons.mozilla.org/firefox/downloads/latest/adblock-for-youtube-tm/"]' /usr/lib/librewolf/distribution/policies.json > /tmp/policies.json
+cp /tmp/policies.json /usr/lib/librewolf/distribution/policies.json
+rm /tmp/policies.json
 
 # configure cinnamon desktop
 XDG_CONFIG_HOME=/etc/skel/.config dconf dump /org/cinnamon/ > /etc/skel/dconf-dump.ini
