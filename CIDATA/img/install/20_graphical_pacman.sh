@@ -300,6 +300,51 @@ Categories=System;Utility;
 EOF
 chmod +x /etc/xdg/autostart/ibus-daemon.desktop
 
+# wallpaper switcher service
+tee /usr/local/bin/wallpaper.sh <<'EOF'
+#!/usr/bin/env bash
+
+WALLPAPER=$( find /usr/share/backgrounds -type f \( -name '*.gif' -o -name '*.png' -o -name '*.jpg' \) | shuf -n 1 )
+URLPARSE=$( python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "${WALLPAPER}" )
+if [[ "${XDG_CURRENT_DESKTOP}" =~ [Gg]nome ]]; then
+  gsettings set org.gnome.desktop.background picture-uri "file://${URLPARSE}"
+fi
+if [[ "${XDG_CURRENT_DESKTOP}" =~ [Mm]ate ]]; then
+  gsettings set org.mate.desktop.background picture-uri "file://${URLPARSE}"
+fi
+if [[ "${XDG_CURRENT_DESKTOP}" =~ [Cc]innamon ]]; then
+  gsettings set org.cinnamon.desktop.background picture-uri "file://${URLPARSE}"
+fi
+EOF
+chmod +x /usr/local/bin/wallpaper.sh
+mkdir -p /etc/systemd/user
+tee /etc/systemd/user/wallpaper.service << EOF
+[Unit]
+Description=Switch to random desktop wallpaper
+
+[Service]
+Type=simple
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/local/bin/wallpaper.sh
+
+[Install]
+WantedBy=default.target
+EOF
+tee /etc/systemd/user/wallpaper.timer << EOF
+[Unit]
+Description=Execute wallpaper switcher service every hour
+
+[Timer]
+OnCalendar=hourly
+Unit=wallpaper.service
+
+[Install]
+WantedBy=timers.target
+EOF
+systemctl --global enable wallpaper.timer
+
 
 # install code-oss extensions for user"
 ( HOME=/etc/skel /bin/bash -c '
