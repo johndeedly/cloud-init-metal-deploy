@@ -345,6 +345,8 @@ WantedBy=timers.target
 EOF
 systemctl --global enable wallpaper.timer
 
+# global xterm fallback to kitty terminal
+ln -s /usr/bin/kitty /usr/local/bin/xterm
 
 # install code-oss extensions for user"
 ( HOME=/etc/skel /bin/bash -c '
