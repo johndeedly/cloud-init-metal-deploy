@@ -255,6 +255,51 @@ done
 cat /tmp/mimeapps.list.added /tmp/mimeapps.list.default > /etc/xdg/mimeapps.list
 rm /tmp/mimeapps.list.added /tmp/mimeapps.list.default
 
+# autostart flameshot
+mkdir -p /etc/xdg/autostart
+tee /etc/xdg/autostart/flameshot.desktop <<EOF
+[Desktop Entry]
+Name=Flameshot
+Comment=Autostart flameshot on startup
+Exec=/usr/bin/flameshot
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true
+EOF
+chmod +x /etc/xdg/autostart/flameshot.desktop
+
+# autostart gammastep
+tee /etc/xdg/autostart/gammastep.desktop <<EOF
+[Desktop Entry]
+Name=Gammastep
+Comment=Autostart gammastep on startup
+Exec=/usr/bin/gammastep -l manual:51:10 -t 6500:3500 -b 1:0.75 -m randr
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true
+EOF
+chmod +x /etc/xdg/autostart/gammastep.desktop
+
+# autostart ibus environment
+tee -a /etc/environment <<EOF
+GTK_IM_MODULE=ibus
+QT_IM_MODULE=ibus
+XMODIFIERS=@im=ibus
+EOF
+mkdir -p /etc/xdg/autostart
+tee /etc/xdg/autostart/ibus-daemon.desktop <<EOF
+[Desktop Entry]
+Name=IBus
+GenericName=Input Method Framework
+Comment=Start IBus Input Method Framework
+Exec=ibus-daemon -rxR
+Icon=ibus
+NoDisplay=true
+Type=Application
+Categories=System;Utility;
+EOF
+chmod +x /etc/xdg/autostart/ibus-daemon.desktop
+
 
 # install code-oss extensions for user"
 ( HOME=/etc/skel /bin/bash -c '
