@@ -206,6 +206,55 @@ dconf update
 dconf list /org/cinnamon/
 dconf reset -f /org/cinnamon/
 
+# set application mimetype defaults
+FILELIST=(
+  /usr/share/applications/libreoffice-math.desktop
+  /usr/share/applications/libreoffice-draw.desktop
+  /usr/share/applications/libreoffice-calc.desktop
+  /usr/share/applications/libreoffice-writer.desktop
+  /usr/share/applications/libreoffice-impress.desktop
+  /usr/share/applications/kitty.desktop
+  /usr/share/applications/librewolf.desktop
+  /usr/share/applications/betterbird.desktop
+  /usr/share/applications/xarchiver.desktop
+  /usr/share/applications/mpv.desktop
+  /usr/share/applications/notepadqq.desktop
+  /usr/share/applications/gpicview.desktop
+  /usr/share/applications/nemo.desktop
+)
+tee /tmp/mimeapps.list.added <<EOF
+[Added Associations]
+EOF
+tee /tmp/mimeapps.list.default <<EOF
+[Default Applications]
+EOF
+for file in "${FILELIST[@]}"; do
+  if [ -f "$file" ]; then
+    grep 'MimeType=' "$file" | sed -e 's/.*=//' -e 's/;/\n/g' | while read -r line; do
+      if [ -n "$line" ]; then
+        # add to existing entry
+        if grep -q "$line" /tmp/mimeapps.list.added; then
+          sed -i 's|\('"$line"'=.*\)|\1;'"${file##*/}"'|' /tmp/mimeapps.list.added
+        else
+          tee -a /tmp/mimeapps.list.added <<EOF
+${line}=${file##*/}
+EOF
+        fi
+        # overwrite existing entry -> last come, first served
+        if grep -q "$line" /tmp/mimeapps.list.default; then
+          sed -i 's|'"$line"'=.*|'"$line"'='"${file##*/}"'|' /tmp/mimeapps.list.default
+        else
+          tee -a /tmp/mimeapps.list.default <<EOF
+${line}=${file##*/}
+EOF
+        fi
+      fi
+    done
+  fi
+done
+cat /tmp/mimeapps.list.added /tmp/mimeapps.list.default > /etc/xdg/mimeapps.list
+rm /tmp/mimeapps.list.added /tmp/mimeapps.list.default
+
 
 # install code-oss extensions for user"
 ( HOME=/etc/skel /bin/bash -c '
