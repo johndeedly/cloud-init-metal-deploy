@@ -22,16 +22,16 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt install pro
 # apply the new settings to grub
 update-grub
 
-# one bridge per interface, dhcp setup
+# one bridge per interface, dhcp setup on first device
 cnt=$((-1))
-ip -j link show | jq -r '.[] | select(.link_type != "loopback") | .ifname' | while read -r line; do
+ip -j link show | jq -r '.[] | select(.link_type != "loopback" and (.ifname | startswith("vmbr") | not)) | .ifname' | while read -r line; do
 cnt=$((cnt+1))
 tee -a /etc/network/interfaces <<EOF
 
 iface $line inet manual
 
 auto vmbr$cnt
-iface vmbr$cnt inet dhcp
+iface vmbr$cnt inet $(if [ $cnt -eq 0 ]; then echo "dhcp"; else echo "manual"; fi)
     bridge-ports $line
     bridge-stp off
     bridge-fd 0
