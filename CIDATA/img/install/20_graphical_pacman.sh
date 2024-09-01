@@ -394,3 +394,38 @@ fi
 if [ -f /etc/pam.d/passwd ]; then
   sed -i 's/password\s\+include\s\+system-auth/password        include         system-auth\npassword        optional        pam_gnome_keyring.so/' /etc/pam.d/passwd
 fi
+
+# cinnamon taskbar shortcuts
+mkdir -p /etc/skel/.config/cinnamon/spices/grouped-window-list@cinnamon.org
+tee /etc/skel/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json <<EOF
+{
+    "pinned-apps": {
+        "type": "generic",
+        "default": [
+            "nemo.desktop",
+            "firefox.desktop",
+            "org.gnome.Terminal.desktop"
+        ],
+        "value": [
+            "nemo.desktop",
+            "librewolf.desktop",
+            "betterbird.desktop",
+            "kitty.desktop",
+            "code-oss.desktop",
+            "drawio.desktop"
+        ]
+    },
+    "show-apps-order-hotkey": {
+        "type": "keybinding",
+        "default": "<Super>grave",
+        "description": "Global hotkey to show the order of apps",
+        "value": ""
+    },
+    "super-num-hotkeys": {
+        "type": "checkbox",
+        "default": true,
+        "description": "Enable Super+<number> shortcut to switch/open apps",
+        "value": false
+    }
+}
+EOF
