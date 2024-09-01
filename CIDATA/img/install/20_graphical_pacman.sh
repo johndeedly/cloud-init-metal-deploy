@@ -59,7 +59,19 @@ keysym Menu = Super_R
 EOF
 
 # configure librewolf
-jq '.policies.Extensions.Install |= . + ["https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/","https://addons.mozilla.org/firefox/downloads/latest/keepassxc-browser/","https://addons.mozilla.org/firefox/downloads/latest/single-file/","https://addons.mozilla.org/firefox/downloads/latest/sponsorblock/","https://addons.mozilla.org/firefox/downloads/latest/forget_me_not/","https://addons.mozilla.org/firefox/downloads/latest/return-youtube-dislikes/","https://addons.mozilla.org/firefox/downloads/latest/adblock-for-youtube-tm/"]' /usr/lib/librewolf/distribution/policies.json > /tmp/policies.json
+LIBREWOLF_EXTENSIONS=(
+  adguard-adblocker
+  keepassxc-browser
+  single-file
+  sponsorblock
+  forget_me_not
+  return-youtube-dislikes
+  adblock-for-youtube-tm
+)
+printf -v tmparr '"https://addons.mozilla.org/firefox/downloads/latest/%s/",' "${LIBREWOLF_EXTENSIONS[@]}"
+jq_cmdstr=".policies.Extensions.Install |= . + [${tmparr%,}]"
+unset tmparr
+jq "$jq_cmdstr" /usr/lib/librewolf/distribution/policies.json > /tmp/policies.json
 cp /tmp/policies.json /usr/lib/librewolf/distribution/policies.json
 rm /tmp/policies.json
 
