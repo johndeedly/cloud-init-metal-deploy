@@ -241,7 +241,7 @@ write_files:
 
       # resize main ext4/btrfs partition
       # create cidata partition at the end of the disk
-      ROOT_PART=( $(lsblk -no PATH,PARTN,FSTYPE,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root/I!d' | head -n1) )
+      ROOT_PART=( $(lsblk -no PATH,PARTN,FSTYPE,PARTTYPENAME "${TARGET_DEVICE}" | sed -e '/root\|linux filesystem/I!d' | head -n1) )
       echo "ROOT: ${TARGET_DEVICE}, partition ${ROOT_PART[1]}"
       LC_ALL=C parted -s -a optimal --fix -- "${TARGET_DEVICE}" \
         name "${ROOT_PART[1]}" root \
