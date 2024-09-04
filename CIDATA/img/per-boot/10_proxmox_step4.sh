@@ -37,7 +37,7 @@ for username in root pveadm; do
   pveum user modify "$username"@pam -groups admins || true
 done
 
-# add local users to group admins
+# add local users to group users
 getent passwd | while IFS=: read -r username x uid gid gecos home shell; do
   if [ -n "$home" ] && [ -d "$home" ] && [ "${home:0:6}" == "/home/" ]; then
     if [ "$uid" -ge 1000 ]; then
