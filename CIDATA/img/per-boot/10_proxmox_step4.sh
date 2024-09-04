@@ -67,8 +67,6 @@ iface $brname inet static
     bridge-fd 0
     bridge-vlan-aware yes
     bridge-vids 2-4094
-    post-up echo 1 > /proc/sys/net/ipv4/ip_forward
-    post-up echo 1 > /proc/sys/net/ipv4/conf/vmbr0/proxy_arp
 EOF
   fi
   pveum acl modify "/sdn/zones/localnetwork/$brname" --roles PVESDNUser -users "$username" -propagate 1 || true
