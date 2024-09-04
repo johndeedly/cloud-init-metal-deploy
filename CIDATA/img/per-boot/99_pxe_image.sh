@@ -7,7 +7,7 @@ if ! [ -f /bin/pacman ]; then
     exit 0
 fi
 
-exec 2>&1 &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
+exec &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
 
 # virtualbox or qemu
 VIRTENV=$(systemd-detect-virt)
