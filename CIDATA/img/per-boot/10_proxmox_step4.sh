@@ -76,6 +76,56 @@ ifreload -a
 # removes the nagging "subscription missing" popup on login (no permanent solution)
 sed -Ezi 's/(function\(orig_cmd\) \{)/\1\n\torig_cmd\(\);\n\treturn;/g' /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
 
+# add cloud images as lxc and vm templates
+lxcid=$((980))
+vmid=$((990))
+while IFS=, read -r cloud_image cloud_url; do
+  if [ -z "$cloud_image" ]; then
+    continue
+  fi
+  pushd /var/lib/vz/template/cache
+    echo ":: download $cloud_url"
+    wget --progress=dot:mega -O "$cloud_image.qcow2" "$cloud_url"
+    echo ":: convert $cloud_image.qcow2 to $cloud_image.raw"
+    qemu-img convert -O raw "$cloud_image.qcow2" "$cloud_image.raw"
+    echo ":: detect root partition in $cloud_image.raw"
+    losetup -P /dev/loop0 "$cloud_image.raw"
+    sleep 1
+    ROOT_PART=( $(lsblk -no PATH,PARTTYPENAME /dev/loop0 | sed -e '/root\|linux filesystem/I!d' | head -n1) )
+    if [ -z "${ROOT_PART[0]}" ]; then
+      echo "!! error detecting root partition in $cloud_image.raw"
+      popd
+      unset cloud_image
+      unset cloud_url
+      continue
+    fi
+    echo ":: mount root partition ${ROOT_PART[0]}"
+    mount "${ROOT_PART[0]}" /mnt
+    echo ":: build $cloud_image.tar.zst"
+    find /mnt/ -printf "%P\n" | tar --zstd -cf "$cloud_image.tar.zst" --no-recursion -C /mnt/ -T -
+    umount -l /mnt/
+    sleep 1
+    losetup -d /dev/loop0
+    rm "$cloud_image.raw"
+    echo ":: create container template $lxcid named $cloud_image"
+    pct create $lxcid "local:vztmpl/$cloud_image.tar.zst" --hostname "$cloud_image" --pool pool1 --cores 4 --memory 512 --net0 name=eth0,bridge=vmbr0
+    pct template $lxcid
+    echo ":: create vm template $vmid named $cloud_image"
+    qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 512 --boot order=virtio0 --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2" --net0 virtio,bridge=vmbr0
+    qm template $vmid
+  popd
+  unset cloud_image
+  unset cloud_url
+  unset ROOT_PART
+  lxcid=$((lxcid+1))
+  vmid=$((vmid+1))
+done <<'EOF'
+archlinux-cloudimg-amd64,https://ftp.halifax.rwth-aachen.de/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
+noble-server-cloudimg-amd64,https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+debian-12-generic-amd64,https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+rocky-9-genericcloud-amd64,https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2
+EOF
+
 # reboot system
 ( ( sleep 5 && systemctl reboot ) & )
 
