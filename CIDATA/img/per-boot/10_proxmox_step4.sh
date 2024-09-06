@@ -76,9 +76,39 @@ ifreload -a
 # removes the nagging "subscription missing" popup on login (no permanent solution)
 sed -Ezi 's/(function\(orig_cmd\) \{)/\1\n\torig_cmd\(\);\n\treturn;/g' /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
 
-# add cloud images as lxc and vm templates
+# add cloud images as lxc templates
 lxcid=$((980))
+while IFS=, read -r cloud_image cloud_url; do
+  if [ -z "$cloud_image" ]; then
+    continue
+  fi
+  pushd /var/lib/vz/template/cache
+    echo ":: download $cloud_url"
+    wget --progress=dot:mega -O "$cloud_image.tar.xz" "$cloud_url"
+    echo ":: create container template $lxcid named $cloud_image"
+    pct create $lxcid "local:vztmpl/$cloud_image.tar.xz" --hostname "$cloud_image" --pool pool1 --memory 512 --net0 name=eth0,bridge=vmbr0
+    pct start $lxcid
+    pct enter $lxcid <<'EOF'
+USERID=root
+USERHASH=$(openssl passwd -6 -salt abcxyz 'packer-build-passwd')
+sed -i 's/^'"$USERID"':[^:]*:/'"$USERID"':'"${USERHASH//\//\\/}"':/' /etc/shadow
+EOF
+    pct stop $lxcid
+    pct template $lxcid
+  popd
+  unset cloud_image
+  unset cloud_url
+  lxcid=$((lxcid+1))
+done <<'EOF'
+archlinux-cloudimg-amd64,https://jenkins.linuxcontainers.org/job/image-archlinux/architecture=amd64%2Crelease=current%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+noble-server-cloudimg-amd64,https://jenkins.linuxcontainers.org/job/image-ubuntu/architecture=amd64%2Crelease=noble%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+debian-12-generic-amd64,https://jenkins.linuxcontainers.org/job/image-debian/architecture=amd64%2Crelease=bookworm%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+rocky-9-genericcloud-amd64,https://jenkins.linuxcontainers.org/job/image-rockylinux/architecture=amd64%2Crelease=9%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+EOF
+
+# add cloud images as vm templates
 vmid=$((990))
+modprobe nbd max_part=63
 while IFS=, read -r cloud_image cloud_url; do
   if [ -z "$cloud_image" ]; then
     continue
@@ -86,41 +116,43 @@ while IFS=, read -r cloud_image cloud_url; do
   pushd /var/lib/vz/template/cache
     echo ":: download $cloud_url"
     wget --progress=dot:mega -O "$cloud_image.qcow2" "$cloud_url"
-    echo ":: convert $cloud_image.qcow2 to $cloud_image.raw"
-    qemu-img convert -O raw "$cloud_image.qcow2" "$cloud_image.raw"
-    echo ":: detect root partition in $cloud_image.raw"
-    losetup -P /dev/loop0 "$cloud_image.raw"
-    sleep 1
-    ROOT_PART=( $(lsblk -no PATH,PARTTYPENAME /dev/loop0 | sed -e '/root\|linux filesystem/I!d' | head -n1) )
+    echo ":: create block device for $cloud_image.qcow2"
+    qemu-nbd -c /dev/nbd0 "$cloud_image.qcow2"
+    sleep 2
+    echo ":: detect root partition in $cloud_image.qcow2"
+    ROOT_PART=( $(lsblk -no PATH,PARTTYPENAME /dev/nbd0 | sed -e '/root\|linux filesystem/I!d' | head -n1) )
     if [ -z "${ROOT_PART[0]}" ]; then
-      echo "!! error detecting root partition in $cloud_image.raw"
+      echo "!! error detecting root partition in $cloud_image.qcow2"
+      qemu-nbd -d /dev/nbd0
       popd
       unset cloud_image
       unset cloud_url
       continue
     fi
     echo ":: mount root partition ${ROOT_PART[0]}"
-    mount "${ROOT_PART[0]}" /mnt
-    echo ":: build $cloud_image.tar.zst"
-    find /mnt/ -printf "%P\n" | tar --zstd -cf "$cloud_image.tar.zst" --no-recursion -C /mnt/ -T -
-    umount -l /mnt/
-    sleep 1
-    losetup -d /dev/loop0
-    rm "$cloud_image.raw"
-    echo ":: create container template $lxcid named $cloud_image"
-    pct create $lxcid "local:vztmpl/$cloud_image.tar.zst" --hostname "$cloud_image" --pool pool1 --cores 4 --memory 512 --net0 name=eth0,bridge=vmbr0
-    pct template $lxcid
+    mount -o rw "${ROOT_PART[0]}" /mnt
+    echo ":: modify root partition ${ROOT_PART[0]}"
+    USERID=root
+    USERHASH=$(openssl passwd -6 -salt abcxyz 'packer-build-passwd')
+    sed -i 's/^'"$USERID"':[^:]*:/'"$USERID"':'"${USERHASH//\//\\/}"':/' /mnt/etc/shadow
+    unset USERID
+    unset USERHASH
+    echo ":: unmount and unload $cloud_image.qcow2"
+    umount /mnt
+    qemu-nbd -d /dev/nbd0
+    sleep 2
     echo ":: create vm template $vmid named $cloud_image"
-    qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 512 --boot order=virtio0 --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2" --net0 virtio,bridge=vmbr0
+    qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 512 --boot order=virtio0 \
+      --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2" \
+      --net0 virtio,bridge=vmbr0 --efidisk0 local:0,efitype=4m,pre-enrolled-keys=1 --tpmstate0 local:0,version=v2.0 \
+      --serial0 socket
     qm template $vmid
   popd
   unset cloud_image
   unset cloud_url
-  unset ROOT_PART
-  lxcid=$((lxcid+1))
   vmid=$((vmid+1))
 done <<'EOF'
-archlinux-cloudimg-amd64,https://ftp.halifax.rwth-aachen.de/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
+archlinux-cloudimg-amd64,https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
 noble-server-cloudimg-amd64,https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
 debian-12-generic-amd64,https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
 rocky-9-genericcloud-amd64,https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2
