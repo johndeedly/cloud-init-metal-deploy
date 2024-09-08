@@ -92,6 +92,37 @@ while IFS=, read -r cloud_image cloud_url; do
 USERID=root
 USERHASH=$(openssl passwd -6 -salt abcxyz 'packer-build-passwd')
 sed -i 's/^'"$USERID"':[^:]*:/'"$USERID"':'"${USERHASH//\//\\/}"':/' /etc/shadow
+if [ -f /etc/cloud/cloud-init.disabled ]; then
+  rm /etc/cloud/cloud-init.disabled
+fi
+mkdir -p /cidata
+touch /cidata/meta-data
+touch /cidata/vendor-data
+tee /cidata/user-data <<'EOX'
+#cloud-config
+
+locale: de_DE
+EOX
+tee /cidata/network-config <<'EOX'
+version: 2
+ethernets:
+  en:
+    match:
+      name: en*
+    dhcp4: true
+  eth:
+    match:
+      name: eth*
+    dhcp4: true
+EOX
+tee /etc/cloud/cloud.cfg.d/99_nocloud.cfg <<'EOX'
+disable_ec2_metadata: true
+datasource_list: [ "NoCloud" ]
+datasource:
+  NoCloud:
+    seedfrom: file:///cidata
+EOX
+cloud-init clean
 EOF
     pct stop $lxcid
     pct template $lxcid
