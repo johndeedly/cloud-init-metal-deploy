@@ -630,6 +630,7 @@ write_files:
 
       # initialize pacman keyring
       if [ -e /bin/pacman ]; then
+        sed -i 's/^#\?ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf
         LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm archlinux-keyring
       fi
 
