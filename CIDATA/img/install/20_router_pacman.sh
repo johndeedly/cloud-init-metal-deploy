@@ -265,7 +265,7 @@ chown step:step /srv/step/.step/pwd
 chmod 400 /srv/step/.step/pwd
 
 su -s /bin/bash - step <<EOS
-step-cli ca init --deployment-type=standalone --name=internal --dns=172.26.0.1 --dns=2001:db8:7b:1:: --dns=router.internal --address=:8443 --provisioner=step-ca@router.internal --password-file=/srv/step/.step/pwd --acme
+step-cli ca init --deployment-type=standalone --name=internal --dns=172.26.0.1 --dns=fdd5:a799:9326:171d::1 --dns=172.28.0.1 --dns=fd97:6274:3c67:7974::1 --dns=router.internal --dns=gateway.internal --address=:8443 --provisioner=step-ca@router.internal --password-file=/srv/step/.step/pwd --acme
 sed -i '0,/"name": "acme".*/s//"name": "acme",\n\t\t\t\t"claims": {\n\t\t\t\t\t"maxTLSCertDuration": "2160h",\n\t\t\t\t\t"defaultTLSCertDuration": "2160h"\n\t\t\t\t}/' /srv/step/.step/config/ca.json
 EOS
 
