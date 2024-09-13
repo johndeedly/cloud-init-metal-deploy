@@ -6,35 +6,49 @@ if ! [ -f /bin/pacman ]; then
     exit 0
 fi
 
-mkdir -p /srv/pacmirror/files
-
-tee /usr/local/bin/mirrorsync.sh <<EOF
+tee /usr/local/bin/pacsync.sh <<'EOF'
 #!/usr/bin/env bash
 
-SYNC_HOME="/srv/pacmirror"
-SYNC_FILES="\$SYNC_HOME/files"
-SYNC_REPO=(core extra multilib iso)
-SERVER_ARR="\$(curl -S 'https://archlinux.org/mirrors/status/tier/1/json/' | jq -r '[.urls[] | select(.protocol == "rsync" and (.country_code == "AT" or .country_code == "BE" or .country_code == "DK" or .country_code == "FI" or .country_code == "FR" or .country_code == "DE" or .country_code == "IT" or .country_code == "NL" or .country_code == "NO" or .country_code == "PL" or .country_code == "ES" or .country_code == "SE" or .country_code == "CH" or .country_code == "GB") and .active)]')"
-SERVER_ARR_LEN="\$(echo -en \$SERVER_ARR | jq '. | length')"
-SERVER_SEL="\$(shuf -i1-\$SERVER_ARR_LEN -n1)"
-SYNC_SERVER="\$(echo -en \$SERVER_ARR | jq -r ".[\$SERVER_SEL].url")"
-
-if [ ! -d "\$SYNC_FILES" ]; then
-  mkdir -p "\$SYNC_FILES"
+if [ -f /var/lib/pacman/db.lck ]; then
+    killall -SIGINT pacman
+    rm /var/lib/pacman/db.lck || true
 fi
 
-echo ">> \$SERVER_ARR_LEN tier 1 servers"
-echo ">> choosing mirror \$SYNC_SERVER"
-
-for repo in \${SYNC_REPO[@]}; do
-  repo=\$(echo "\$repo" | tr [:upper:] [:lower:])
-  echo ">> Syncing \$repo to \$SYNC_FILES/\$repo"
-  rsync -rptlv --delete-after --safe-links --copy-links --delay-updates "\$SYNC_SERVER/\$repo" "\$SYNC_FILES/"
-  echo ">> Syncing \$repo done."
-  sleep 5
-done
+/usr/bin/pacman -Sy --noconfirm
+/usr/bin/pacman -Fy --noconfirm
+/usr/bin/pacman -Ssq | xargs pacman -Swdd --noconfirm
+/usr/bin/paccache -r
 EOF
-chmod +x /usr/local/bin/mirrorsync.sh
+chmod +x /usr/local/bin/pacsync.sh
+
+tee /etc/systemd/system/pacsync.service <<'EOF'
+[Unit]
+Description=Download up-to-date packages
+StartLimitIntervalSec=30s
+StartLimitBurst=5
+After=network.target
+
+[Service]
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=2s
+WorkingDirectory=/var/cache/pacman/pkg
+ExecStart=/usr/local/bin/pacsync.sh
+EOF
+
+tee /etc/systemd/system/pacsync.timer <<EOF
+[Unit]
+Description=Schedule up-to-date packages
+
+[Timer]
+OnBootSec=15min
+OnUnitInactiveSec=3h 57min
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 tee /etc/systemd/system/darkhttpd.service <<EOF
 [Unit]
@@ -49,47 +63,20 @@ StandardOutput=journal
 StandardError=journal
 Restart=on-failure
 RestartSec=2s
-WorkingDirectory=/srv/pacmirror/files
-ExecStart=/usr/bin/darkhttpd /srv/pacmirror/files --ipv6 --addr '::' --port 8080 --mimetypes /etc/conf.d/mimetypes
+WorkingDirectory=/srv/http
+ExecStart=/usr/bin/darkhttpd /srv/http --ipv6 --addr '::' --port 8080 --mimetypes /etc/conf.d/mimetypes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-tee /etc/systemd/system/pacmirror.timer <<EOF
-[Unit]
-Description=Run mirrorsync daily and on boot
+tee -a /etc/fstab <<EOF
 
-[Timer]
-OnBootSec=15min
-OnUnitInactiveSec=3h 57min
-
-[Install]
-WantedBy=multi-user.target
+overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/pkg:/var/lib/pacman/sync 0 0
 EOF
 
-tee /etc/systemd/system/pacmirror.service <<EOF
-[Unit]
-Description=Local mirror sync
-StartLimitIntervalSec=30s
-StartLimitBurst=5
-After=network.target
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed darkhttpd pacman-contrib
 
-[Service]
-StandardInput=null
-StandardOutput=journal
-StandardError=journal
-Restart=on-failure
-RestartSec=2s
-WorkingDirectory=/srv/pacmirror
-ExecStart=/usr/local/bin/mirrorsync.sh
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed darkhttpd
-
-systemctl enable darkhttpd.service pacmirror.timer
+systemctl enable darkhttpd.service pacsync.timer
 
 firewall-offline-cmd --zone=public --add-port=8080/tcp
