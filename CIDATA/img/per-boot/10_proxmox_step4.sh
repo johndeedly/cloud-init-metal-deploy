@@ -132,10 +132,10 @@ EOF
   lxcid=$((lxcid+1))
 done <<'EOF'
 archlinux-cloudimg-amd64,https://jenkins.linuxcontainers.org/job/image-archlinux/architecture=amd64%2Crelease=current%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
-noble-server-cloudimg-amd64,https://jenkins.linuxcontainers.org/job/image-ubuntu/architecture=amd64%2Crelease=noble%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
-debian-12-generic-amd64,https://jenkins.linuxcontainers.org/job/image-debian/architecture=amd64%2Crelease=bookworm%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
-rocky-9-genericcloud-amd64,https://jenkins.linuxcontainers.org/job/image-rockylinux/architecture=amd64%2Crelease=9%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
 EOF
+#noble-server-cloudimg-amd64,https://jenkins.linuxcontainers.org/job/image-ubuntu/architecture=amd64%2Crelease=noble%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+#debian-12-generic-amd64,https://jenkins.linuxcontainers.org/job/image-debian/architecture=amd64%2Crelease=bookworm%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
+#rocky-9-genericcloud-amd64,https://jenkins.linuxcontainers.org/job/image-rockylinux/architecture=amd64%2Crelease=9%2Cvariant=cloud/lastCompletedBuild/artifact/rootfs.tar.xz
 
 # add cloud images as vm templates
 vmid=$((990))
@@ -184,10 +184,10 @@ while IFS=, read -r cloud_image cloud_url; do
   vmid=$((vmid+1))
 done <<'EOF'
 archlinux-cloudimg-amd64,https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2
-noble-server-cloudimg-amd64,https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-debian-12-generic-amd64,https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
-rocky-9-genericcloud-amd64,https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2
 EOF
+#noble-server-cloudimg-amd64,https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+#debian-12-generic-amd64,https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+#rocky-9-genericcloud-amd64,https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud.latest.x86_64.qcow2
 
 # reboot system
 ( ( sleep 5 && systemctl reboot ) & )
