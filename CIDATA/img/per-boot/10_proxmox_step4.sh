@@ -174,7 +174,7 @@ while IFS=, read -r cloud_image cloud_url; do
     sleep 2
     echo ":: create vm template $vmid named $cloud_image"
     qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 512 --boot order=virtio0 \
-      --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2" \
+      --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2,format=qcow2" \
       --net0 virtio,bridge=vmbr0 --efidisk0 local:0,efitype=4m,pre-enrolled-keys=1 --tpmstate0 local:0,version=v2.0 \
       --serial0 socket
     qm template $vmid
