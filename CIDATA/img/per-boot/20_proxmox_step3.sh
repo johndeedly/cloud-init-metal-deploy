@@ -10,7 +10,7 @@ if [ -f "/var/lib/cloud/scripts/per-boot/30_proxmox_step2.sh" ]; then
     exit 0
 fi
 
-exec &> >(while read -r line; do echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] $line" | tee -a /cidata_log > /dev/tty1; done)
+exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
 
 # wait online
 echo ":: wait for any interface to be online"
