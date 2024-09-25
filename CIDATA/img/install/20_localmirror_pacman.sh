@@ -6,6 +6,8 @@ if ! [ -f /bin/pacman ]; then
     exit 0
 fi
 
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed expac
+
 tee /usr/local/bin/pacsync.sh <<'EOF'
 #!/usr/bin/env bash
 
@@ -16,7 +18,7 @@ fi
 
 /usr/bin/pacman -Sy --noconfirm
 /usr/bin/pacman -Fy --noconfirm
-/usr/bin/pacman -Ssq | xargs pacman -Swdd --noconfirm
+/usr/bin/expac -Ss '%r/%n' | xargs pacman -Swdd --noconfirm
 /usr/bin/paccache -r
 EOF
 chmod +x /usr/local/bin/pacsync.sh
