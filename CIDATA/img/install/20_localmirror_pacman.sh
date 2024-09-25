@@ -46,7 +46,7 @@ Description=Schedule up-to-date packages
 
 [Timer]
 OnBootSec=15min
-OnUnitInactiveSec=3h 57min
+OnCalendar=Tue,Thu,Sat 01:17
 
 [Install]
 WantedBy=multi-user.target
