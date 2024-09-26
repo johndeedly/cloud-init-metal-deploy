@@ -6,7 +6,7 @@ if ! [ -f /bin/pacman ]; then
     exit 0
 fi
 
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed expac
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed expac nginx pacman-contrib
 
 tee /usr/local/bin/pacsync.sh <<'EOF'
 #!/usr/bin/env bash
@@ -52,24 +52,49 @@ OnCalendar=Tue,Thu,Sat 01:17
 WantedBy=multi-user.target
 EOF
 
-tee /etc/systemd/system/darkhttpd.service <<EOF
-[Unit]
-Description=Run dualstack webserver for local mirror
-StartLimitIntervalSec=30s
-StartLimitBurst=5
-After=network.target
+tee /etc/nginx/nginx.conf <<EOF
+user http;
+worker_processes auto;
+worker_cpu_affinity auto;
 
-[Service]
-StandardInput=null
-StandardOutput=journal
-StandardError=journal
-Restart=on-failure
-RestartSec=2s
-WorkingDirectory=/srv/http
-ExecStart=/usr/bin/darkhttpd /srv/http --ipv6 --addr '::' --port 8080 --mimetypes /etc/conf.d/mimetypes
+events {
+    multi_accept on;
+    worker_connections 1024;
+}
 
-[Install]
-WantedBy=multi-user.target
+http {
+    charset utf-8;
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    server_tokens off;
+    log_not_found off;
+    types_hash_max_size 4096;
+    client_max_body_size 16M;
+
+    server {
+        listen 8080;
+        listen [::]:8080;
+        server_name $(cat /etc/hostname);
+        root /srv/http;
+        location / {
+            try_files \$uri \$uri/ =404;
+            autoindex on;
+        }
+    }
+
+    # MIME
+    include mime.types;
+    default_type application/octet-stream;
+
+    # logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+
+    # load configs
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
 EOF
 
 tee -a /etc/fstab <<EOF
@@ -77,8 +102,6 @@ tee -a /etc/fstab <<EOF
 overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/pkg:/var/lib/pacman/sync 0 0
 EOF
 
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed darkhttpd pacman-contrib
-
-systemctl enable darkhttpd.service pacsync.timer
+systemctl enable nginx.service pacsync.timer
 
 firewall-offline-cmd --zone=public --add-port=8080/tcp
