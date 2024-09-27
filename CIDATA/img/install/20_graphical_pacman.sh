@@ -21,6 +21,12 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pamac flatpak gnome-keyring librewolf betterbird \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
+# graphics driver for amd, intel and nvidia
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
+  xf86-video-ati xf86-video-amdgpu mesa vulkan-radeon libva-mesa-driver mesa-vdpau libva-vdpau-driver libva-utils nvtop \
+  nvidia nvidia-open \
+  xf86-video-intel vulkan-intel libva-intel-driver
+
 # enable some services
 systemctl enable cups NetworkManager
 systemctl mask NetworkManager-wait-online
