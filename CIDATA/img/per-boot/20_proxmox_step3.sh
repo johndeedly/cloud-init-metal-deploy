@@ -17,7 +17,7 @@ echo ":: wait for any interface to be online"
 /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
 
 # install the main proxmox packages
-LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt install proxmox-ve postfix open-iscsi chrony
+LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt install proxmox-ve postfix open-iscsi chrony packer ansible
 
 # apply the new settings to grub
 update-grub
