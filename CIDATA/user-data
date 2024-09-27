@@ -116,7 +116,7 @@ write_files:
     content: |
       #!/usr/bin/env bash
 
-      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
+      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log /dev/ttyS0 > /dev/tty1; done)
       
       # wait online
       echo ":: wait for any interface to be online"
@@ -143,7 +143,7 @@ write_files:
     content: |
       #!/usr/bin/env bash
       
-      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
+      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log /dev/ttyS0 > /dev/tty1; done)
 
       # Remount copy on write space
       if [ -e /run/archiso/cowspace ]; then

@@ -10,7 +10,7 @@ if [ -f "/var/lib/cloud/scripts/per-boot/20_proxmox_step3.sh" ]; then
     exit 0
 fi
 
-exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
+exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log /dev/ttyS0 > /dev/tty1; done)
 
 # create proxmox groups
 pveum group add admins
