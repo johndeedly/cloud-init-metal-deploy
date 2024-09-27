@@ -11,7 +11,7 @@ chpasswd:
 
 growpart:
   mode: off
-resize_rootfs: false
+resize_rootfs: off
 
 locale: de_DE
 
