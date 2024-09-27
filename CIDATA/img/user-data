@@ -9,6 +9,17 @@ chpasswd:
       password: packer-build-passwd
       type: text
 
+users:
+  - name: user
+    groups: users
+    shell: /bin/bash
+    passwd: $6$abcxyz$SbH927uoC4lzRtFfY0VVySMbwPylQWrA64dOsKciS4vD.N.QhnwtdzQz9SxzR0/yvnd2dvATA3gh5bNDHaNCB.
+    sudo: ALL=(ALL) ALL
+    lock-passwd: false
+    ssh_pwauth: true
+    chpasswd:
+      - expire: false
+
 growpart:
   mode: off
 resize_rootfs: off
