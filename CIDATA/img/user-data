@@ -36,6 +36,9 @@ bootcmd:
   # load the german keyboard layout for the current session
   - loadkeys de-latin1
 
+mounts:
+  - [ host.0, /mnt, 9p, "trans=virtio,version=9p2000.L,rw", "0", "0" ]
+  
 ### update hostname
 hostname: cloud-ready
 create_hostname_file: true
