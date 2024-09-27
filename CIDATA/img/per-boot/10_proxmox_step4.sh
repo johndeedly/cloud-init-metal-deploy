@@ -86,12 +86,9 @@ while IFS=, read -r cloud_image cloud_url; do
     echo ":: download $cloud_url"
     wget --progress=dot:mega -O "$cloud_image.tar.xz" "$cloud_url"
     echo ":: create container template $lxcid named $cloud_image"
-    pct create $lxcid "local:vztmpl/$cloud_image.tar.xz" --hostname "$cloud_image" --pool pool1 --memory 512 --net0 name=eth0,bridge=vmbr0
+    pct create $lxcid "local:vztmpl/$cloud_image.tar.xz" --hostname "$cloud_image" --pool pool1 --memory 2048 --net0 name=eth0,bridge=vmbr0
     pct start $lxcid
     pct enter $lxcid <<'EOF'
-USERID=root
-USERHASH=$(openssl passwd -6 -salt abcxyz 'packer-build-passwd')
-sed -i 's/^'"$USERID"':[^:]*:/'"$USERID"':'"${USERHASH//\//\\/}"':/' /etc/shadow
 if [ -f /etc/cloud/cloud-init.disabled ]; then
   rm /etc/cloud/cloud-init.disabled
 fi
@@ -100,8 +97,141 @@ touch /cidata/meta-data
 touch /cidata/vendor-data
 tee /cidata/user-data <<'EOX'
 #cloud-config
-
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      password: packer-build-passwd
+      type: text
 locale: de_DE
+keyboard:
+  layout: de
+  model: pc105
+timezone: CET
+bootcmd:
+  - systemctl stop systemd-time-wait-sync.service
+  - systemctl disable systemd-time-wait-sync.service
+  - systemctl mask time-sync.target
+write_files:
+  - path: /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/ssh/sshd_config
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      UsePAM yes
+    owner: 'root:root'
+    permissions: '0644'
+    append: true
+  - path: /etc/default/locale
+    content: LANG=de_DE.UTF-8
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/timezone
+    content: CET
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/vconsole.conf
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/default/keyboard
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/default/console-setup
+    content: |
+      CHARMAP="UTF-8"
+      CODESET="Lat2"
+      FONTFACE="Terminus"
+      FONTSIZE="16"
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.inputrc
+    content: |
+      set enable-keypad on
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
+    content: |
+      #!/usr/bin/env bash
+
+      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log /dev/ttyS0 > /dev/tty1; done)
+      
+      # wait online (not on rocky, as rocky does not have wait-online preinstalled)
+      if [ -f /usr/lib/systemd/systemd-networkd-wait-online ]; then
+        echo ":: wait for any interface to be online"
+        /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+      fi
+
+      # initialize pacman keyring
+      if [ -e /bin/pacman ]; then
+        sed -i 's/^#\?ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf
+        LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm archlinux-keyring
+      fi
+
+      # speedup apt on ubuntu and debian
+      if [ -e /bin/apt ]; then
+        APT_CFGS=( /etc/apt/apt.conf.d/* )
+        for cfg in "${APT_CFGS[@]}"; do
+          sed -i 's/^Acquire::http::Dl-Limit/\/\/Acquire::http::Dl-Limit/' "$cfg" || true
+        done
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install eatmydata
+      fi
+
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install locales keyboard-configuration console-setup console-data tzdata
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum install -y glibc-common glibc-locale-source glibc-langpack-de
+      fi
+
+      # Generate locales
+      if [ -e /bin/apt ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        dpkg-reconfigure --frontend=noninteractive locales
+        update-locale LANG=de_DE.UTF-8
+      elif [ -e /bin/pacman ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        locale-gen
+      elif [ -e /bin/yum ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        localedef -c -i de_DE -f UTF-8 de_DE.UTF-8
+      fi
+      
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        dpkg-reconfigure --frontend=noninteractive keyboard-configuration
+        dpkg-reconfigure --frontend=noninteractive console-setup
+        mkdir -p /etc/systemd/system/console-setup.service.d
+        tee /etc/systemd/system/console-setup.service.d/override.conf <<EOF
+      [Service]
+      ExecStartPost=/bin/setupcon
+      EOF
+      fi
+
+      # cleanup
+      rm -- "${0}"
+    owner: 'root:root'
+    permissions: '0755'
 EOX
 tee /cidata/network-config <<'EOX'
 version: 2
@@ -147,6 +277,8 @@ while IFS=, read -r cloud_image cloud_url; do
   pushd /var/lib/vz/template/cache
     echo ":: download $cloud_url"
     wget --progress=dot:mega -O "$cloud_image.qcow2" "$cloud_url"
+    echo ":: resize $cloud_image.qcow2"
+    qemu-img resize "$cloud_image.qcow2" 512G
     echo ":: create block device for $cloud_image.qcow2"
     qemu-nbd -c /dev/nbd0 "$cloud_image.qcow2"
     sleep 2
@@ -166,6 +298,248 @@ while IFS=, read -r cloud_image cloud_url; do
     USERID=root
     USERHASH=$(openssl passwd -6 -salt abcxyz 'packer-build-passwd')
     sed -i 's/^'"$USERID"':[^:]*:/'"$USERID"':'"${USERHASH//\//\\/}"':/' /mnt/etc/shadow
+    if [ -f /mnt/etc/cloud/cloud-init.disabled ]; then
+      rm /mnt/etc/cloud/cloud-init.disabled
+    fi
+    mkdir -p /mnt/cidata
+    touch /mnt/cidata/meta-data
+    touch /mnt/cidata/vendor-data
+    tee /mnt/cidata/user-data <<'EOX'
+#cloud-config
+ssh_pwauth: true
+chpasswd:
+  expire: false
+  users:
+    - name: root
+      password: packer-build-passwd
+      type: text
+locale: de_DE
+keyboard:
+  layout: de
+  model: pc105
+timezone: CET
+bootcmd:
+  - systemctl stop systemd-time-wait-sync.service
+  - systemctl disable systemd-time-wait-sync.service
+  - systemctl mask time-sync.target
+  - loadkeys de-latin1
+hostname: archlinux-cloud
+create_hostname_file: true
+fqdn: archlinux-cloud.internal
+prefer_fqdn_over_hostname: true
+write_files:
+  - path: /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/ssh/sshd_config
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      UsePAM yes
+    owner: 'root:root'
+    permissions: '0644'
+    append: true
+  - path: /etc/default/locale
+    content: LANG=de_DE.UTF-8
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/timezone
+    content: CET
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/vconsole.conf
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/default/keyboard
+    content: |
+      KEYMAP=de-latin1
+      XKBLAYOUT=de
+      XKBMODEL=pc105
+      FONT=Lat2-Terminus16
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/default/console-setup
+    content: |
+      CHARMAP="UTF-8"
+      CODESET="Lat2"
+      FONTFACE="Terminus"
+      FONTSIZE="16"
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /etc/skel/.inputrc
+    content: |
+      set enable-keypad on
+    owner: 'root:root'
+    permissions: '0644'
+  - path: /var/lib/cloud/scripts/per-boot/00_firstboot.sh
+    content: |
+      #!/usr/bin/env bash
+
+      exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log /dev/ttyS0 > /dev/tty1; done)
+      
+      # wait online (not on rocky, as rocky does not have wait-online preinstalled)
+      if [ -f /usr/lib/systemd/systemd-networkd-wait-online ]; then
+        echo ":: wait for any interface to be online"
+        /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
+      fi
+
+      # initialize pacman keyring
+      if [ -e /bin/pacman ]; then
+        sed -i 's/^#\?ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf
+        LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm archlinux-keyring
+      fi
+
+      # speedup apt on ubuntu and debian
+      if [ -e /bin/apt ]; then
+        APT_CFGS=( /etc/apt/apt.conf.d/* )
+        for cfg in "${APT_CFGS[@]}"; do
+          sed -i 's/^Acquire::http::Dl-Limit/\/\/Acquire::http::Dl-Limit/' "$cfg" || true
+        done
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y install eatmydata
+      fi
+
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt update
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install locales keyboard-configuration console-setup console-data tzdata
+      elif [ -e /bin/yum ]; then
+        LC_ALL=C yes | LC_ALL=C yum install -y glibc-common glibc-locale-source glibc-langpack-de
+      fi
+
+      # Generate locales
+      if [ -e /bin/apt ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        dpkg-reconfigure --frontend=noninteractive locales
+        update-locale LANG=de_DE.UTF-8
+      elif [ -e /bin/pacman ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        locale-gen
+      elif [ -e /bin/yum ]; then
+        sed -i 's/^#\? \?de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen
+        echo "LANG=de_DE.UTF-8" > /etc/locale.conf
+        localedef -c -i de_DE -f UTF-8 de_DE.UTF-8
+      fi
+      
+      # Configure timezone
+      if [ -e /bin/apt ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
+        dpkg-reconfigure --frontend=noninteractive tzdata
+      elif [ -e /bin/pacman ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
+      elif [ -e /bin/yum ]; then
+        rm /etc/localtime || true
+        ln -s /usr/share/zoneinfo/CET /etc/localtime
+      fi
+      
+      # Configure keyboard and console
+      if [ -e /bin/apt ]; then
+        dpkg-reconfigure --frontend=noninteractive keyboard-configuration
+        dpkg-reconfigure --frontend=noninteractive console-setup
+        mkdir -p /etc/systemd/system/console-setup.service.d
+        tee /etc/systemd/system/console-setup.service.d/override.conf <<EOF
+      [Service]
+      ExecStartPost=/bin/setupcon
+      EOF
+      elif [ -e /bin/pacman ]; then
+        loadkeys de-latin1 || true
+      elif [ -e /bin/yum ]; then
+        loadkeys de-latin1 || true
+      fi
+
+      # Configure (virtual) environment
+      VIRT_ENV=$(systemd-detect-virt)
+      if [ -e /bin/apt ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install qemu-guest-agent
+            ;;
+          oracle)
+            if grep -q Ubuntu /proc/version; then
+              LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install virtualbox-guest-x11
+            fi
+            ;;
+        esac
+      elif [ -e /bin/pacman ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm qemu-guest-agent
+            ;;
+          oracle)
+            LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm virtualbox-guest-utils
+            systemctl enable vboxservice.service
+            ;;
+        esac
+      elif [ -e /bin/yum ]; then
+        case $VIRT_ENV in
+          qemu | kvm)
+            LC_ALL=C yes | LC_ALL=C yum install -y qemu-guest-agent
+            ;;
+        esac
+      fi
+
+      # modify grub
+      GRUB_GLOBAL_CMDLINE="console=tty1 rw loglevel=3 acpi=force acpi_osi=Linux"
+      GRUB_CFGS=( /etc/default/grub /etc/default/grub.d/* )
+      for cfg in "${GRUB_CFGS[@]}"; do
+        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="'"$GRUB_GLOBAL_CMDLINE"'"/' "$cfg" || true
+        sed -i 's/^GRUB_CMDLINE_LINUX=/#GRUB_CMDLINE_LINUX=/' "$cfg" || true
+        sed -i 's/^GRUB_TERMINAL=.*/GRUB_TERMINAL=console/' "$cfg" || true
+      done
+      if [ -e /bin/apt ]; then
+        grub-mkconfig -o /boot/grub/grub.cfg
+        if [ -d /boot/efi/EFI/debian ]; then
+          grub-mkconfig -o /boot/efi/EFI/debian/grub.cfg
+        elif [ -d /boot/efi/EFI/ubuntu ]; then
+          grub-mkconfig -o /boot/efi/EFI/ubuntu/grub.cfg
+        fi
+      elif [ -e /bin/pacman ]; then
+        grub-mkconfig -o /boot/grub/grub.cfg
+      elif [ -e /bin/yum ]; then
+        grub2-editenv - set "kernelopts=$GRUB_GLOBAL_CMDLINE"
+        if [ -e /sbin/grubby ]; then
+          grubby --update-kernel=ALL --args="$GRUB_GLOBAL_CMDLINE"
+        fi
+        grub2-mkconfig -o /boot/grub2/grub.cfg --update-bls-cmdline
+        grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg --update-bls-cmdline
+      fi
+    
+      # cleanup
+      rm -- "${0}"
+    owner: 'root:root'
+    permissions: '0755'
+EOX
+    tee /mnt/cidata/network-config <<'EOX'
+version: 2
+ethernets:
+  en:
+    match:
+      name: en*
+    dhcp4: true
+  eth:
+    match:
+      name: eth*
+    dhcp4: true
+EOX
+    tee /mnt/etc/cloud/cloud.cfg.d/99_nocloud.cfg <<'EOX'
+disable_ec2_metadata: true
+datasource_list: [ "NoCloud" ]
+datasource:
+  NoCloud:
+    seedfrom: file:///cidata
+EOX
     unset USERID
     unset USERHASH
     echo ":: unmount and unload $cloud_image.qcow2"
@@ -173,10 +547,10 @@ while IFS=, read -r cloud_image cloud_url; do
     qemu-nbd -d /dev/nbd0
     sleep 2
     echo ":: create vm template $vmid named $cloud_image"
-    qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 512 --boot order=virtio0 \
-      --virtio0 "local:0,discard=on,snapshot=1,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2,format=qcow2" \
+    qm create $vmid --name "$cloud_image" --pool pool1 --machine q35 --cores 4 --memory 2048 --boot order=virtio0 \
+      --bios ovmf --virtio0 "local:0,discard=on,import-from=/var/lib/vz/template/cache/$cloud_image.qcow2,format=qcow2" \
       --net0 virtio,bridge=vmbr0 --efidisk0 local:0,efitype=4m --tpmstate0 local:0,version=v2.0 \
-      --serial0 socket
+      --serial0 socket --vga virtio
     qm template $vmid
   popd
   unset cloud_image
