@@ -18,8 +18,18 @@ fi
 
 /usr/bin/pacman -Sy --noconfirm
 /usr/bin/pacman -Fy --noconfirm
-/usr/bin/expac -Ss '%r/%n' | xargs pacman -Swdd --noconfirm
-/usr/bin/paccache -r
+while read -r repo; do
+    mkdir -p "/var/cache/pacman/mirror/$repo"
+    ln -s "/var/lib/pacman/sync/$repo.db" "/var/cache/pacman/mirror/$repo/$repo.db" || true
+    ln -s "/var/lib/pacman/sync/$repo.files" "/var/cache/pacman/mirror/$repo/$repo.files" || true
+    /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swdd --noconfirm --needed --logfile /dev/null --cachedir "/var/cache/pacman/mirror/$repo/"
+    /usr/bin/paccache -r --cachedir "/var/cache/pacman/mirror/$repo/"
+done <<EOX
+core
+extra
+multilib
+chaotic-aur
+EOX
 EOF
 chmod +x /usr/local/bin/pacsync.sh
 
@@ -99,7 +109,7 @@ EOF
 
 tee -a /etc/fstab <<EOF
 
-overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/pkg:/var/lib/pacman/sync 0 0
+overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/mirror:/var/lib/pacman/sync 0 0
 EOF
 
 systemctl enable nginx.service pacsync.timer
