@@ -22,7 +22,7 @@ while read -r repo; do
     mkdir -p "/var/cache/pacman/mirror/$repo"
     ln -s "/var/lib/pacman/sync/$repo.db" "/var/cache/pacman/mirror/$repo/$repo.db" || true
     ln -s "/var/lib/pacman/sync/$repo.files" "/var/cache/pacman/mirror/$repo/$repo.files" || true
-    /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swdd --noconfirm --needed --logfile /dev/null --cachedir "/var/cache/pacman/mirror/$repo/"
+    /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swdd --noconfirm --logfile /dev/null --cachedir "/var/cache/pacman/mirror/$repo/"
     /usr/bin/paccache -r --cachedir "/var/cache/pacman/mirror/$repo/"
 done <<EOX
 core
