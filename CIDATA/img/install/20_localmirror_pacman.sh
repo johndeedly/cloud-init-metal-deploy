@@ -8,6 +8,9 @@ fi
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed expac nginx pacman-contrib
 
+# prepare mirror cache dir
+mkdir -p /var/cache/pacman/mirror
+
 tee /usr/local/bin/pacsync.sh <<'EOF'
 #!/usr/bin/env bash
 
