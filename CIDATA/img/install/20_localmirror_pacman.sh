@@ -36,7 +36,12 @@ while read -r repo; do
     mkdir -p "/var/cache/pacman/mirror/$repo"
     ln -s "/var/lib/pacman/sync/$repo.db" "/var/cache/pacman/mirror/$repo/$repo.db" || true
     ln -s "/var/lib/pacman/sync/$repo.files" "/var/cache/pacman/mirror/$repo/$repo.files" || true
-    /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swdd --noconfirm --logfile /dev/null --cachedir "/var/cache/pacman/mirror/$repo/"
+    /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swddp --logfile "/dev/null" --cachedir "/dev/null" | while read -r line; do
+      echo "$line"
+      echo "$line.sig"
+    done > /tmp/mirror_url_list.txt
+    wget -c -P "/var/cache/pacman/mirror/$repo" -i /tmp/mirror_url_list.txt --progress=dot:mega
+    rm /tmp/mirror_url_list.txt
     /usr/bin/paccache -r --cachedir "/var/cache/pacman/mirror/$repo/"
 done <<EOX
 core
