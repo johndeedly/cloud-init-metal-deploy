@@ -21,6 +21,7 @@ else
 Include = /etc/pacman.d/mirrorlist
 EOS
 fi
+LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm
 
 tee /usr/local/bin/pacsync.sh <<'EOF'
 #!/usr/bin/env bash
