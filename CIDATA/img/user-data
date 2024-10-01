@@ -941,6 +941,70 @@ write_files:
       if [ -f /etc/pam.d/sudo ]; then
           sed -i 's/^\(auth.*pam_unix.so\)/auth      sufficient    pam_ldap.so\n\1 try_first_pass/' /etc/pam.d/sudo
       fi
+
+      echo ":: enable ntfs3 kernel support for read/write/repair of partitions"
+      echo "ntfs3" | tee /etc/modules-load.d/ntfs3.conf
+      tee /etc/udev/rules.d/50-ntfs.rules <<EOF
+      SUBSYSTEM=="block", ENV{ID_FS_TYPE}=="ntfs", ENV{ID_FS_TYPE}="ntfs3"
+      EOF
+
+      echo ":: enable cifs kernel support for windows shares"
+      echo "cifs" | tee /etc/modules-load.d/cifs.conf
+
+      echo ":: enable sg kernel support for dvd/bluray drives"
+      echo "sg" | tee /etc/modules-load.d/sg.conf
+
+      echo ":: user first time login script"
+      tee /usr/local/bin/userlogin.sh <<'EOS'
+      #!/usr/bin/env bash
+      
+      # prepare user directory
+      if [[ ! -f $HOME/.ssh/id_ed25519.pub ]]; then
+        echo "Generating ssh keys for user '$USER'."
+        mkdir -p $HOME/.ssh
+        chmod 0700 $HOME/.ssh
+        ssh-keygen -t ed25519 -N "" -C "" -f $HOME/.ssh/id_ed25519
+        ssh-keygen -t rsa -N "" -C "" -f $HOME/.ssh/id_rsa
+        chmod 0600 $HOME/.ssh/id_ed25519 $HOME/.ssh/id_rsa
+        chmod 0644 $HOME/.ssh/id_ed25519.pub $HOME/.ssh/id_rsa.pub
+        eval "$(ssh-agent -s)"
+        ssh-add $HOME/.ssh/id_ed25519
+        ssh-add $HOME/.ssh/id_rsa
+        eval "$(ssh-agent -k)"
+      fi
+
+      if [[ ! -f $HOME/.wg/$USER.key ]]; then
+        echo "Generating wireguard keys for user '$USER'."
+        mkdir -p $HOME/.wg
+        chmod 0700 $HOME/.wg
+        wg genkey | tee $HOME/.wg/$USER.key | wg pubkey > $HOME/.wg/$USER.pub
+        chmod 0600 $HOME/.wg/$USER.key
+        chmod 0644 $HOME/.wg/$USER.pub
+      fi
+
+      # prevent error https://github.com/kovidgoyal/kitty/issues/320
+      # open terminal failed: missing or unsuitable terminal: xterm-kitty
+      tee $HOME/.ssh/config <<EOX
+      SetEnv TERM=screen
+      EOX
+      EOS
+      chmod +x /usr/local/bin/userlogin.sh
+
+      tee /etc/systemd/user/userlogin.service <<'EOF'
+      [Unit]
+      Description=Execute on first user login after boot
+
+      [Service]
+      Type=simple
+      StandardInput=null
+      StandardOutput=journal
+      StandardError=journal
+      ExecStart=-/usr/local/bin/userlogin.sh
+
+      [Install]
+      WantedBy=default.target
+      EOF
+      systemctl --global enable userlogin.service
       
       # search for additional userscripts 
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)
