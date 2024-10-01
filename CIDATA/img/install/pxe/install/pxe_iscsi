@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+build() {
+    map add_module iscsi_tcp iscsi_ibft libiscsi libiscsi_tcp scsi_transport_iscsi crc32c
+    
+    add_runscript
+
+    add_binary iscsistart
+}
+
+help() {
+    cat <<HELPEOF
+This hook loads the necessary modules for boot via PXE and iSCSI.
+HELPEOF
+}

@@ -6,6 +6,7 @@ CIDATA/img/*
 !CIDATA/img/vendor-data
 !CIDATA/img/install
 CIDATA/img/install/*
+!CIDATA/img/install/pxe
 !CIDATA/img/install/.gitkeep
 !CIDATA/img/per-boot
 CIDATA/img/per-boot/*

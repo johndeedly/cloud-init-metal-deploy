@@ -1,0 +1,56 @@
+#!/usr/bin/ash
+
+run_hook() {
+    if [ -n "${ip}" ] && [ -n "${pxe_iscsi_srv}" ]; then
+        # copy to RAM logic is disabled, as iscsistart does not support session shutdown
+        export copytoram="n"
+
+        pxe_iscsi_srv=$(eval echo "${pxe_iscsi_srv}")
+
+        # enable chained iscsi mount handler
+        export mount_handler="pxe_iscsi_mount_handler"
+    fi
+}
+
+pxe_iscsi_mount_handler() {
+    newroot="${1}"
+    [ -z "${pxe_iscsi_cli}" ] && pxe_iscsi_cli="iqn.2003-01.internal.pxeboot"
+    [ -z "${pxe_iscsi_tgt}" ] && pxe_iscsi_tgt="iqn.2003-01.internal.pxe:arch"
+    
+    msg ":: Boot PXE over iSCSI"
+
+    # 1st: setup the iscsi filesystem
+    msg ":: Setup iSCSI with '${pxe_iscsi_srv}', target '${pxe_iscsi_tgt}'"
+    iscsistart -i "${pxe_iscsi_cli}" -t "${pxe_iscsi_tgt}" -g 1 -a "${pxe_iscsi_srv}" -d 2
+    
+    # 2nd: check the copy to RAM filesystem is present
+    if ! mountpoint -q "${copytoram_mnt}"; then
+        msg ":: Mount ${copytoram_mnt} (tmpfs) filesystem, size=${copytoram_size}"
+        mount --mkdir -t tmpfs -o "size=${copytoram_size}",mode=0755 copytoram "${copytoram_mnt}"
+    fi
+
+    # 3rd: place the iSCSI filesystem as softlink inside the RAM filesystem
+    mkdir -p "${copytoram_mnt}/arch/x86_64"
+    msg ":: Wait for iSCSI device"
+    matched=""
+    while [ -z "${matched}" ]; do
+        for i in /dev/disk/by-path/*; do
+            if [ "${i//-lun-}" != "${i}" ]; then
+                matched="${i}"
+                break
+            fi
+        done
+        sleep 2
+    done
+    msg ":: Link ${matched} into the RAM filesystem"
+    ln -s "${matched}" "${copytoram_mnt}/arch/x86_64/pxeboot.img"
+
+    # 4th: mount the RAM filesystem as boot mount
+    msg ":: Bindmount '${copytoram_mnt}' as '${boot_mnt}'"
+    if ! mount --mkdir -o bind "${copytoram_mnt}" "${boot_mnt}"; then
+        echo "!! ERROR: failed to mount '${copytoram_mnt}'"
+        launch_interactive_shell
+    fi
+
+    pxe_mount_handler "${newroot}"
+}
