@@ -773,6 +773,9 @@ write_files:
 
       exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); echo -e "[$(cat /proc/uptime | cut -d' ' -f1)] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
       
+      # add modules to initcpio
+      sed -i 's/^MODULES=.*/MODULES=(usbhid xhci_hcd vfat)/g' /etc/mkinitcpio.conf
+
       # system upgrade
       if [ -e /bin/apt ]; then
         if grep -q Debian /proc/version; then

@@ -22,9 +22,10 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
 # graphics driver for amd, intel and nvidia
+sed -i 's/^MODULES=(/MODULES=(amdgpu radeon nouveau i915 /g' /etc/mkinitcpio.conf
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   xf86-video-ati xf86-video-amdgpu mesa vulkan-radeon libva-mesa-driver mesa-vdpau libva-vdpau-driver libva-utils nvtop \
-  nvidia \
+  xf86-video-nouveau vulkan-nouveau \
   xf86-video-intel vulkan-intel libva-intel-driver
 
 # enable some services
