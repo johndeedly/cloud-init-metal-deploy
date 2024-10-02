@@ -436,3 +436,11 @@ tee /etc/skel/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json <<
     }
 }
 EOF
+
+# configure flameshot
+mkdir -p /etc/skel/.config/flameshot
+tee /etc/skel/.config/flameshot/flameshot.ini <<'EOF'
+[General]
+contrastOpacity=188
+showStartupLaunchMessage=false
+EOF
