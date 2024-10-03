@@ -30,3 +30,4 @@ echo ":: create pxe boot initcpio"
 mkdir -p /var/tmp/mkinitcpio
 mkinitcpio -p pxe -t /var/tmp/mkinitcpio
 cp /boot/vmlinuz-linux /boot/initramfs-linux-pxe.img /share/pxe/arch/x86_64/
+chmod 644 /share/pxe/arch/x86_64/*
