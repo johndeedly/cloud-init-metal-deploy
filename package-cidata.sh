@@ -18,25 +18,6 @@ function log_error() {
     echo -e "\033[1;31m!! $*\033[0m"
 }
 
-if ! [ -f "archlinux-x86_64.iso" ]; then
-    ARCHISODATE=$(curl -sL "https://archlinux.org/download/" | grep -oE 'magnet:.*?dn=archlinux-.*?-x86_64.iso' | cut -d- -f2)
-    ARCHISOHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/archlinux/iso/${ARCHISODATE}/sha256sums.txt" | grep -oE "^.*?archlinux-x86_64.iso$")
-
-    log_text "Downloading archlinux-x86_64.iso"
-    if ! wget -O "archlinux-x86_64.iso" "https://geo.mirror.pkgbuild.com/archlinux/iso/${ARCHISODATE}/archlinux-x86_64.iso"; then
-        log_error "Download error"
-        exit 1
-    fi
-
-    sync
-    
-    log_text "Validate checksum of archlinux-x86_64.iso"
-    if ! echo "${ARCHISOHASH}" | sha256sum --check --status; then
-        log_error "Checksum mismatch"
-        exit 1
-    fi
-fi
-
 if ! [ -d CIDATA/img ]; then
     mkdir -p CIDATA/img
 fi
@@ -67,9 +48,7 @@ if ! [ -f CIDATA/meta-data ]; then
 fi
 
 CLOUDINITISO="cloud-init.iso"
-ARCHISOMODDED="archlinux-x86_64-with-cidata.iso"
 [ -f "${CLOUDINITISO}" ] && rm "${CLOUDINITISO}"
-[ -f "${ARCHISOMODDED}" ] && rm "${ARCHISOMODDED}"
 
 log_text "Create INSTALL image to append it to the archiso image"
 xorriso -volid "CIDATA" \
@@ -79,9 +58,3 @@ xorriso -volid "CIDATA" \
         -map CIDATA/vendor-data /vendor-data \
         -map CIDATA/network-config /network-config \
         -map CIDATA/img/ /img/
-
-log_text "Create the modified archiso image"
-xorriso -indev "archlinux-x86_64.iso" \
-        -outdev "${ARCHISOMODDED}" \
-        -append_partition 3 0x83 "${CLOUDINITISO}" \
-        -boot_image any replay
