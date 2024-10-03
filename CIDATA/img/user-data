@@ -362,13 +362,13 @@ write_files:
     permissions: '0644'
   - path: /etc/skel/.config/nvim/init.lua
     content: |
-      vim.g.base46_cache = vim.fn.stdpath "data" .. "/nvchad/base46/"
+      vim.g.base46_cache = vim.fn.stdpath "data" .. "/base46/"
       vim.g.mapleader = " "
 
       -- bootstrap lazy and all plugins
       local lazypath = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
 
-      if not vim.loop.fs_stat(lazypath) then
+      if not vim.uv.fs_stat(lazypath) then
         local repo = "https://github.com/folke/lazy.nvim.git"
         vim.fn.system { "git", "clone", "--filter=blob:none", repo, "--branch=stable", lazypath }
       end
@@ -384,9 +384,6 @@ write_files:
           lazy = false,
           branch = "v2.5",
           import = "nvchad.plugins",
-          config = function()
-            require "options"
-          end,
         },
 
         { import = "plugins" },
@@ -396,6 +393,7 @@ write_files:
       dofile(vim.g.base46_cache .. "defaults")
       dofile(vim.g.base46_cache .. "statusline")
 
+      require "options"
       require "nvchad.autocmds"
 
       vim.schedule(function()
@@ -405,10 +403,14 @@ write_files:
     permissions: '0644'
   - path: /etc/skel/.config/nvim/lua/chadrc.lua
     content: |
+      -- This file needs to have same structure as nvconfig.lua 
+      -- https://github.com/NvChad/ui/blob/v2.5/lua/nvconfig.lua
+      -- Please read that file to know all available options :( 
+
       ---@type ChadrcConfig
       local M = {}
 
-      M.ui = {
+      M.base46 = {
         theme = "catppuccin",
 
         -- hl_override = {
@@ -464,7 +466,7 @@ write_files:
         -- },
       }
 
-      require("conform").setup(options)
+      return options
     owner: 'root:root'
     permissions: '0644'
   - path: /etc/skel/.config/nvim/lua/configs/lazy.lua
@@ -520,28 +522,29 @@ write_files:
     permissions: '0644'
   - path: /etc/skel/.config/nvim/lua/configs/lspconfig.lua
     content: |
-      -- EXAMPLE 
-      local on_attach = require("nvchad.configs.lspconfig").on_attach
-      local on_init = require("nvchad.configs.lspconfig").on_init
-      local capabilities = require("nvchad.configs.lspconfig").capabilities
+      -- load defaults i.e lua_lsp
+      require("nvchad.configs.lspconfig").defaults()
 
       local lspconfig = require "lspconfig"
+
+      -- EXAMPLE
       local servers = { "html", "cssls", "tsserver", "clangd", "omnisharp", "pyright", "dockerls", "texlab", "marksman" }
+      local nvlsp = require "nvchad.configs.lspconfig"
 
       -- lsps with default config
       for _, lsp in ipairs(servers) do
         lspconfig[lsp].setup {
-          on_attach = on_attach,
-          on_init = on_init,
-          capabilities = capabilities,
+          on_attach = nvlsp.on_attach,
+          on_init = nvlsp.on_init,
+          capabilities = nvlsp.capabilities,
         }
       end
 
-      -- typescript
-      lspconfig.tsserver.setup {
-        on_attach = on_attach,
-        on_init = on_init,
-        capabilities = capabilities,
+      -- configuring single server, example: typescript
+      lspconfig.ts_ls.setup {
+        on_attach = nvlsp.on_attach,
+        on_init = nvlsp.on_init,
+        capabilities = nvlsp.capabilities,
       }
     owner: 'root:root'
     permissions: '0644'
@@ -550,16 +553,14 @@ write_files:
       return {
         {
           "stevearc/conform.nvim",
-          -- event = 'BufWritePre' -- uncomment for format on save
-          config = function()
-            require "configs.conform"
-          end,
+          -- event = 'BufWritePre', -- uncomment for format on save
+          opts = require "configs.conform",
         },
 
+        -- These are some examples, uncomment them if you want to see them work!
         {
           "neovim/nvim-lspconfig",
           config = function()
-            require("nvchad.configs.lspconfig").defaults()
             require "configs.lspconfig"
           end,
         },
