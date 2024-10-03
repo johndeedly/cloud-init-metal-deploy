@@ -18,7 +18,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
-  pamac flatpak gnome-keyring librewolf betterbird \
+  pamac flatpak gnome-keyring librewolf betterbird virt-manager \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
 # graphics driver for amd, intel and nvidia
@@ -30,8 +30,18 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   xf86-video-vmware
 
 # enable some services
-systemctl enable cups NetworkManager
+systemctl enable cups NetworkManager libvirtd.service libvirtd.socket
 systemctl mask NetworkManager-wait-online
+
+# add all users to group libvirt
+getent passwd | while IFS=: read -r username x uid gid gecos home shell; do
+  if [ -n "$home" ] && [ -d "$home" ] && [ "$home" != "/" ]; then
+    if [ "$uid" -eq 0 ] || [ "$uid" -ge 1000 ]; then
+      echo ":: add $username to group libvirt"
+      usermod -a -G libvirt $username
+    fi
+  fi
+done
 
 # add flathub repo to system when not present
 flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
