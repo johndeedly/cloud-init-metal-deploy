@@ -1020,6 +1020,24 @@ write_files:
       WantedBy=default.target
       EOF
       systemctl --global enable userlogin.service
+
+      # graphics driver for amd, intel, nvidia, vmware and virtio-gpu
+      if [ -e /bin/apt ]; then
+        LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
+          xserver-xorg-video-ati xserver-xorg-video-amdgpu firmware-amd-graphics mesa-vulkan-drivers mesa-vdpau-drivers nvtop \
+          xserver-xorg-video-nouveau \
+          xserver-xorg-video-intel firmware-intel-graphics \
+          xserver-xorg-video-vmware
+        update-initramfs -u
+      elif [ -e /bin/pacman ]; then
+        sed -i 's/^MODULES=(/MODULES=(amdgpu radeon nouveau i915 virtio-gpu vmwgfx /g' /etc/mkinitcpio.conf
+        LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
+          xf86-video-ati xf86-video-amdgpu mesa vulkan-radeon libva-mesa-driver mesa-vdpau libva-vdpau-driver libva-utils nvtop \
+          xf86-video-nouveau vulkan-nouveau \
+          xf86-video-intel vulkan-intel libva-intel-driver \
+          xf86-video-vmware
+        mkinitcpio -P
+      fi
       
       # search for additional userscripts 
       CIDATA_DEVICE=$(lsblk -no PATH,LABEL,FSTYPE | sed -e '/cidata/I!d' -e '/vfat/I!d' | head -n1 | cut -d' ' -f1)

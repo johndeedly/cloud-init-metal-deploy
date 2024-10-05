@@ -21,14 +21,6 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pamac flatpak gnome-keyring librewolf betterbird virt-manager \
   cinnamon cinnamon-translations networkmanager system-config-printer
 
-# graphics driver for amd, intel and nvidia
-sed -i 's/^MODULES=(/MODULES=(amdgpu radeon nouveau i915 virtio-gpu vmwgfx /g' /etc/mkinitcpio.conf
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-  xf86-video-ati xf86-video-amdgpu mesa vulkan-radeon libva-mesa-driver mesa-vdpau libva-vdpau-driver libva-utils nvtop \
-  xf86-video-nouveau vulkan-nouveau \
-  xf86-video-intel vulkan-intel libva-intel-driver \
-  xf86-video-vmware
-
 # enable some services
 systemctl enable cups NetworkManager libvirtd.service libvirtd.socket
 systemctl mask NetworkManager-wait-online
