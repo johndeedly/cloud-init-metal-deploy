@@ -15,7 +15,9 @@ wget -c -P /var/cache/apt/archives -i /tmp/mirror_url_list.txt --progress=dot:me
 find /var/cache/apt/archives -name '*.deb' | cut -d'_' -f1 | sort -u | while read -r pkg; do
   pkg_files=( $(ls -t "$pkg"_*.deb) )
   nr=${#pkg_files[@]}
-  if ((nr > 1)); then
+  if ((nr > 3)); then
+    unset pkg_files[0]
+    unset pkg_files[0]
     unset pkg_files[0]
     rm "${pkg_files[@]}"
   fi
