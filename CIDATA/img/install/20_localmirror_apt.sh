@@ -12,7 +12,14 @@ tee /usr/local/bin/aptsync.sh <<'EOF'
 LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
 /bin/apt list 2>/dev/null | tail -n +2 | cut -d' ' -f1 | xargs /bin/apt download --print-uris 2>/dev/null | cut -d' ' -f1 | tr -d "'" > /tmp/mirror_url_list.txt
 wget -c -P /var/cache/apt/archives -i /tmp/mirror_url_list.txt --progress=dot:mega
-LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y autoclean
+find /var/cache/apt/archives -name '*.deb' | cut -d'_' -f1 | sort -u | while read -r pkg; do
+  pkg_files=( $(ls -t "$pkg"_*.deb) )
+  nr=${#pkg_files[@]}
+  if ((nr > 1)); then
+    unset pkg_files[0]
+    rm "${pkg_files[@]}"
+  fi
+done
 EOF
 chmod +x /usr/local/bin/aptsync.sh
 
