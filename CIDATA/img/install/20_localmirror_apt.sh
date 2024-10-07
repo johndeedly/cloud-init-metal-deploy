@@ -6,11 +6,16 @@ if ! [ -f /bin/apt ]; then
     exit 0
 fi
 
+# enable non-free
+sed -i 's/main contrib$/main contrib non-free/g' /etc/apt/sources.list.d/debian.sources
+
 tee /usr/local/bin/aptsync.sh <<'EOF'
 #!/usr/bin/env bash
 
 LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
-/bin/apt list 2>/dev/null | tail -n +2 | cut -d' ' -f1 | xargs /bin/apt download --print-uris 2>/dev/null | cut -d' ' -f1 | tr -d "'" > /tmp/mirror_url_list.txt
+/bin/apt list 2>/dev/null | tail -n +2 | cut -d' ' -f1 | xargs /bin/apt download --print-uris 2>/dev/null | cut -d' ' -f1 | tr -d "'" | \
+  sed -e 's/mirror+file:\/\/\/etc\/apt\/mirrors\/debian\.list/https:\/\/deb.debian.org\/debian/g' \
+  -e 's/mirror+file:\/\/\/etc\/apt\/mirrors\/debian-security\.list/https:\/\/deb.debian.org\/debian-security/g' > /tmp/mirror_url_list.txt
 wget -c -P /var/cache/apt/archives -i /tmp/mirror_url_list.txt --progress=dot:mega
 find /var/cache/apt/archives -name '*.deb' | cut -d'_' -f1 | sort -u | while read -r pkg; do
   pkg_files=( $(ls -t "$pkg"_*.deb) )
