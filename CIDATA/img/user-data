@@ -1028,7 +1028,7 @@ write_files:
           xserver-xorg-video-nouveau \
           xserver-xorg-video-intel firmware-intel-graphics \
           xserver-xorg-video-vmware
-        update-initramfs -u
+        LC_ALL=C DEBIAN_FRONTEND=noninteractive update-initramfs -u
       elif [ -e /bin/pacman ]; then
         sed -i 's/^MODULES=(/MODULES=(amdgpu radeon nouveau i915 virtio-gpu vmwgfx /g' /etc/mkinitcpio.conf
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
