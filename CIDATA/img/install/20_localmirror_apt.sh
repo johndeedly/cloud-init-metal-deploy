@@ -17,10 +17,9 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
   sed -e 's/mirror+file:\/etc\/apt\/mirrors\/debian\.list/https:\/\/deb.debian.org\/debian/g' \
   -e 's/mirror+file:\/etc\/apt\/mirrors\/debian-security\.list/https:\/\/deb.debian.org\/debian-security/g' > /tmp/mirror_url_list.txt
 wget -c -P /var/cache/apt/archives -i /tmp/mirror_url_list.txt --progress=dot:mega
-find /var/cache/apt/archives -name '*.deb' | cut -d'_' -f1 | sort -u | while read -r pkg; do
-  pkg_files=( $(ls -t "$pkg"_*.deb) )
-  nr=${#pkg_files[@]}
+find /var/cache/apt/archives -name '*.deb' | cut -d'_' -f1 | sort | uniq -c | while read -r nr pkg; do
   if ((nr > 3)); then
+    pkg_files=( $(ls -t "$pkg"_*.deb) )
     unset pkg_files[0]
     unset pkg_files[0]
     unset pkg_files[0]
