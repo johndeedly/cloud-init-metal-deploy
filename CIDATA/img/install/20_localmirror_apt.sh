@@ -7,7 +7,7 @@ if ! [ -f /bin/apt ]; then
 fi
 
 # enable non-free
-sed -i 's/main contrib$/main contrib non-free/g' /etc/apt/sources.list.d/debian.sources
+sed -i 's/main contrib$/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
 
 mkdir -p /var/cache/apt/mirror
 
