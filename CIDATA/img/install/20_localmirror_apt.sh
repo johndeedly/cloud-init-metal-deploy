@@ -6,11 +6,44 @@ if ! [ -f /bin/apt ]; then
     exit 0
 fi
 
+if grep -q Debian /proc/version; then
 # enable non-free
 sed -i 's/main contrib$/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
+fi
 
 mkdir -p /var/cache/apt/mirror
 
+if grep -q Ubuntu /proc/version; then
+tee /usr/local/bin/aptsync.sh <<'EOF'
+#!/usr/bin/env bash
+
+LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
+/bin/apt list 2>/dev/null | tail -n +2 | cut -d' ' -f1 | xargs /bin/apt download --print-uris 2>/dev/null | cut -d' ' -f1 | tr -d "'" > /tmp/mirror_url_list.txt
+# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
+# download to target path, load download list from file, show progress in larger size steps per dot
+wget -x -nH -c -N -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega
+find /var/cache/apt/mirror -name '*.deb' | cut -d'_' -f1 | sort | uniq -c | while read -r nr pkg; do
+  if ((nr > 3)); then
+    pkg_files=( $(ls -t "$pkg"_*.deb) )
+    unset pkg_files[0]
+    unset pkg_files[0]
+    unset pkg_files[0]
+    rm "${pkg_files[@]}"
+  fi
+done
+tee /tmp/mirror_url_list.txt <<EOX
+http://archive.ubuntu.com/ubuntu/dists/noble/
+http://archive.ubuntu.com/ubuntu/dists/noble-updates/
+http://archive.ubuntu.com/ubuntu/dists/noble-backports/
+http://archive.ubuntu.com/ubuntu/dists/noble-security/
+EOX
+# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
+# recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
+# ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
+wget -x -nH -c -N -r -np -R "index.html*" --reject-regex ".*-i386.*|.*debian-installer.*|.*dist-upgrader-all.*|.*source.*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
+rm /tmp/mirror_url_list.txt
+EOF
+else
 tee /usr/local/bin/aptsync.sh <<'EOF'
 #!/usr/bin/env bash
 
@@ -39,9 +72,10 @@ EOX
 # force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
 # ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
-wget -x -nH -c -N -r -np -R "index.html*" --regex-reject ".*-arm64.*|.*-armel.*|.*-armhf.*|.*-i386.*|.*-mips64el.*|.*-mipsel.*|.*-ppc64el.*|.*-s390x.*|.*source.*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
+wget -x -nH -c -N -r -np -R "index.html*" --reject-regex ".*-arm64.*|.*-armel.*|.*-armhf.*|.*-i386.*|.*-mips64el.*|.*-mipsel.*|.*-ppc64el.*|.*-s390x.*|.*source.*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
 rm /tmp/mirror_url_list.txt
 EOF
+fi
 chmod +x /usr/local/bin/aptsync.sh
 
 tee /etc/systemd/system/aptsync.service <<'EOF'
