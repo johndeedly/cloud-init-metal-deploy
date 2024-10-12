@@ -18,9 +18,9 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
 /bin/apt list 2>/dev/null | tail -n +2 | cut -d' ' -f1 | xargs /bin/apt download --print-uris 2>/dev/null | cut -d' ' -f1 | tr -d "'" | \
   sed -e 's/mirror+file:\/etc\/apt\/mirrors\/debian\.list/https:\/\/deb.debian.org\/debian/g' \
   -e 's/mirror+file:\/etc\/apt\/mirrors\/debian-security\.list/https:\/\/deb.debian.org\/debian-security/g' > /tmp/mirror_url_list.txt
-# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones,
+# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # download to target path, load download list from file, show progress in larger size steps per dot
-wget -x -nH -c -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega
+wget -x -nH -c -N -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega
 find /var/cache/apt/mirror -name '*.deb' | cut -d'_' -f1 | sort | uniq -c | while read -r nr pkg; do
   if ((nr > 3)); then
     pkg_files=( $(ls -t "$pkg"_*.deb) )
@@ -36,10 +36,10 @@ https://deb.debian.org/debian/dists/bookworm-updates/
 https://deb.debian.org/debian/dists/bookworm-backports/
 https://deb.debian.org/debian-security/dists/bookworm-security/
 EOX
-# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones,
-# recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, ignore robots.txt,
-# download to target path, load download list from file, show progress in larger size steps per dot
-wget -x -nH -c -r -np -R "index.html*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
+# force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
+# recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
+# ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
+wget -x -nH -c -N -r -np -R "index.html*" --regex-reject ".*-arm64.*|.*-armel.*|.*-armhf.*|.*-i386.*|.*-mips64el.*|.*-mipsel.*|.*-ppc64el.*|.*-s390x.*|.*source.*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
 EOF
 chmod +x /usr/local/bin/aptsync.sh
 

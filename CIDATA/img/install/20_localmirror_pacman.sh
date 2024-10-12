@@ -41,7 +41,9 @@ while read -r repo; do
       echo "$line"
       echo "$line.sig"
     done > /tmp/mirror_url_list.txt
-    wget -c -P "/var/cache/pacman/mirror/$repo" -i /tmp/mirror_url_list.txt --progress=dot:mega
+    # continue unfinished downloads and skip already downloaded ones, use timestamps,
+    # download to target path, load download list from file, show progress in larger size steps per dot
+    wget -c -N -P "/var/cache/pacman/mirror/$repo" -i /tmp/mirror_url_list.txt --progress=dot:mega
     rm /tmp/mirror_url_list.txt
     /usr/bin/paccache -r --cachedir "/var/cache/pacman/mirror/$repo/"
 done <<EOX
