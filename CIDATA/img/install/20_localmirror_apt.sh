@@ -40,6 +40,7 @@ EOX
 # recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
 # ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
 wget -x -nH -c -N -r -np -R "index.html*" --regex-reject ".*-arm64.*|.*-armel.*|.*-armhf.*|.*-i386.*|.*-mips64el.*|.*-mipsel.*|.*-ppc64el.*|.*-s390x.*|.*source.*" -e robots=off -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega 
+rm /tmp/mirror_url_list.txt
 EOF
 chmod +x /usr/local/bin/aptsync.sh
 
