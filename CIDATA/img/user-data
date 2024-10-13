@@ -814,6 +814,15 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum install -y systemd-container
       fi
 
+      download_nerdfont() {
+        echo ":: download nerdfont terminus"
+        curl --fail --silent --location --output /tmp/terminus.tar.xz 'https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Terminus.tar.xz'
+        curl --fail --silent --location --output /tmp/symbols.tar.xz 'https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.tar.xz'
+        mkdir -p /etc/skel/.local/share/fonts
+        tar -xof /tmp/terminus.tar.xz -C /etc/skel/.local/share/fonts/
+        tar -xof /tmp/symbols.tar.xz -C /etc/skel/.local/share/fonts/
+      }
+
       download_starship() {
         echo ":: download starship"
         curl --fail --silent --location --output /tmp/starship-x86_64.tar.gz 'https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-musl.tar.gz'
@@ -852,8 +861,9 @@ write_files:
           bash-completion ncdu pv mc lfm fzf moreutils \
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
-          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
+          gvfs gvfs-backends cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
           libnss-ldap libpam-ldap ldap-utils nslcd
+        download_nerdfont
         download_starship
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           luajit libluajit-5.1-dev lua-mpack lua-lpeg libunibilium-dev libmsgpack-dev libtermkey-dev
@@ -862,12 +872,12 @@ write_files:
         systemctl disable nslcd
       elif [ -e /bin/pacman ]; then
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
-          pacman-contrib starship base-devel neovim yq \
+          pacman-contrib starship ttf-terminus-nerd ttf-nerd-fonts-symbols powershell-bin base-devel neovim yq \
           doas curl wget zstd rsyslog nano npm htop btop git firewalld \
-          bash-completion ncdu pv mc lf fzf moreutils \
+          bash-completion ncdu viu pv mc lf fzf moreutils \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
           openssh wireguard-tools nfs-utils \
-          cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
+          gvfs gvfs-smb cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
           openldap nss-pam-ldapd
         systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
         systemctl disable nslcd
@@ -878,8 +888,9 @@ write_files:
           bash-completion mc moreutils \
           lshw libxml2 jq polkit man-db \
           openssh wireguard-tools nfs-utils \
-          cifs-utils unzip rsync xdg-user-dirs xdg-utils \
+          gvfs gvfs-smb cifs-utils unzip rsync xdg-user-dirs xdg-utils \
           openldap openldap-clients nss-pam-ldapd
+        download_nerdfont
         download_starship
         LC_ALL=C yes | LC_ALL=C yum install -y \
           compat-lua-libs libtermkey libtree-sitter libvterm luajit luajit2.1-luv msgpack unibilium xsel
@@ -1002,6 +1013,9 @@ write_files:
       tee $HOME/.ssh/config <<EOX
       SetEnv TERM=screen
       EOX
+
+      # force update font cache on first login
+      fc-cache -fv
       EOS
       chmod +x /usr/local/bin/userlogin.sh
 
