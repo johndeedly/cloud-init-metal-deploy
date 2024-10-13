@@ -8,7 +8,7 @@ fi
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pipewire pipewire-pulse pipewire-jack pipewire-alsa wireplumber pamixer pavucontrol playerctl alsa-utils qpwgraph rtkit realtime-privileges \
-  xorg-server xorg-xinit xorg-xrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify xarchiver \
+  xorg-server xorg-xinit xorg-xrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify engrampa \
   flameshot libinput xf86-input-libinput xorg-xinput kitty wofi dex xrdp ibus ibus-typing-booster lightdm lightdm-slick-greeter \
   archlinux-wallpaper elementary-wallpapers elementary-icon-theme ttf-dejavu ttf-dejavu-nerd ttf-liberation ttf-font-awesome ttf-hanazono \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
@@ -234,7 +234,7 @@ FILELIST=(
   /usr/share/applications/kitty.desktop
   /usr/share/applications/librewolf.desktop
   /usr/share/applications/betterbird.desktop
-  /usr/share/applications/xarchiver.desktop
+  /usr/share/applications/engrampa.desktop
   /usr/share/applications/mpv.desktop
   /usr/share/applications/notepadqq.desktop
   /usr/share/applications/gpicview.desktop

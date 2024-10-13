@@ -17,7 +17,7 @@ fi
 
 LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
   pipewire pipewire-pulse pipewire-jack pipewire-alsa wireplumber pamixer pavucontrol playerctl alsa-utils qpwgraph rtkit \
-  xserver-xorg xinit lxrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify-bin xarchiver \
+  xserver-xorg xinit lxrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify-bin engrampa \
   flameshot libinput-bin xserver-xorg-input-libinput kitty wofi dex xrdp ibus ibus-typing-booster \
   elementary-icon-theme plasma-workspace-wallpapers \
   cups ipp-usb libreoffice krita evolution seahorse freerdp3-x11 notepadqq gitg keepassxc pdfpc \
