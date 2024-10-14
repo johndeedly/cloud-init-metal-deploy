@@ -57,15 +57,15 @@ pushd /srv/fabric
   mcservermode=create
   case "$mcservermode" in
     create)
-  echo ":: download Create"
-  curl -sL --progress-bar -o /srv/fabric/mods/create-fabric-0.5.1-f-build.1417+mc1.20.1.jar 'https://cdn.modrinth.com/data/Xbc0uyRg/versions/h2HgGyvA/create-fabric-0.5.1-f-build.1417%2Bmc1.20.1.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/create-structures-0.1.1-1.20.1-FABRIC.jar 'https://cdn.modrinth.com/data/IAnP4np7/versions/nqsTHZwx/create-structures-0.1.1-1.20.1-FABRIC.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/create-new-age-fabric-1.20.1-1.1.2.jar 'https://cdn.modrinth.com/data/FTeXqI9v/versions/rk63oafd/create-new-age-fabric-1.20.1-1.1.2.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/botarium-fabric-1.20.1-2.3.4.jar 'https://cdn.modrinth.com/data/2u6LRnMa/versions/f3ATcSfq/botarium-fabric-1.20.1-2.3.4.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/create_interactive-1.0.3-beta.2+e045de2a48.jar 'https://cdn.modrinth.com/data/MyfCcqiE/versions/VLHAtRBQ/create_interactive-1.0.3-beta.2%2Be045de2a48.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/valkyrienskies-120-2.3.0-beta.5.jar 'https://cdn.modrinth.com/data/V5ujR2yw/versions/wDYLclLS/valkyrienskies-120-2.3.0-beta.5.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/Steam_Rails-1.6.4+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/ZzjhlDgM/versions/AJ3IGl3n/Steam_Rails-1.6.4%2Bfabric-mc1.20.1.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/createaddition-fabric+1.20.1-1.2.4.jar 'https://cdn.modrinth.com/data/kU1G12Nn/versions/vV4bZmhm/createaddition-fabric%2B1.20.1-1.2.4.jar'
+      echo ":: download Create"
+      curl -sL --progress-bar -o /srv/fabric/mods/create-fabric-0.5.1-f-build.1417+mc1.20.1.jar 'https://cdn.modrinth.com/data/Xbc0uyRg/versions/h2HgGyvA/create-fabric-0.5.1-f-build.1417%2Bmc1.20.1.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/create-structures-0.1.1-1.20.1-FABRIC.jar 'https://cdn.modrinth.com/data/IAnP4np7/versions/nqsTHZwx/create-structures-0.1.1-1.20.1-FABRIC.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/create-new-age-fabric-1.20.1-1.1.2.jar 'https://cdn.modrinth.com/data/FTeXqI9v/versions/rk63oafd/create-new-age-fabric-1.20.1-1.1.2.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/botarium-fabric-1.20.1-2.3.4.jar 'https://cdn.modrinth.com/data/2u6LRnMa/versions/f3ATcSfq/botarium-fabric-1.20.1-2.3.4.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/create_interactive-1.0.3-beta.2+e045de2a48.jar 'https://cdn.modrinth.com/data/MyfCcqiE/versions/VLHAtRBQ/create_interactive-1.0.3-beta.2%2Be045de2a48.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/valkyrienskies-120-2.3.0-beta.5.jar 'https://cdn.modrinth.com/data/V5ujR2yw/versions/wDYLclLS/valkyrienskies-120-2.3.0-beta.5.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/Steam_Rails-1.6.4+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/ZzjhlDgM/versions/AJ3IGl3n/Steam_Rails-1.6.4%2Bfabric-mc1.20.1.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/createaddition-fabric+1.20.1-1.2.4.jar 'https://cdn.modrinth.com/data/kU1G12Nn/versions/vV4bZmhm/createaddition-fabric%2B1.20.1-1.2.4.jar'
       curl -sL --progress-bar -o /srv/fabric/mods/CreateNumismatics-1.0.6+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/Jdbbtt0i/versions/ExoJ4bOE/CreateNumismatics-1.0.6%2Bfabric-mc1.20.1.jar'
       ;;
     cobblemon)
