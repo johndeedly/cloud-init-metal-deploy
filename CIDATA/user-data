@@ -180,6 +180,8 @@ write_files:
         gpg
         --homedir
         "$homedir"
+        --keyserver
+        hkp://keys.gnupg.net
         --no-permission-warning
         --refresh-keys
       )
