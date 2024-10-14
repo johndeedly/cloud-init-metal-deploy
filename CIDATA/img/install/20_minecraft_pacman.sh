@@ -64,9 +64,10 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/Steam_Rails-1.6.4+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/ZzjhlDgM/versions/AJ3IGl3n/Steam_Rails-1.6.4%2Bfabric-mc1.20.1.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/createaddition-fabric+1.20.1-1.2.4.jar 'https://cdn.modrinth.com/data/kU1G12Nn/versions/vV4bZmhm/createaddition-fabric%2B1.20.1-1.2.4.jar'
 
-  echo ":: download Controlify"
-  curl -sL --progress-bar -o /srv/fabric/mods/Controlify-1.6.0+1.20.jar 'https://cdn.modrinth.com/data/DOUdJVEm/versions/MSWp1Dsg/Controlify-1.6.0%2B1.20.jar'
-  curl -sL --progress-bar -o /srv/fabric/mods/YetAnotherConfigLib-3.5.0+1.20.1-fabric.jar 'https://cdn.modrinth.com/data/1eAoo2KR/versions/gQuF6HNa/YetAnotherConfigLib-3.5.0%2B1.20.1-fabric.jar'
+  echo ":: download ControllerX"
+  curl -sL --progress-bar -o /srv/fabric/mods/ControllerX-Fabric-20.1.4+pre.1.jar 'https://cdn.modrinth.com/data/gUv10ywC/versions/p3ruHkCa/ControllerX-Fabric-20.1.4%2Bpre.1.jar'
+  curl -sL --progress-bar -o /srv/fabric/mods/ultreon-lib-fabric-1.5.0.jar 'https://cdn.modrinth.com/data/74g7isNi/versions/NbeWhN2Q/ultreon-lib-fabric-1.5.0.jar'
+  curl -sL --progress-bar -o /srv/fabric/mods/architectury-9.2.14-fabric.jar 'https://cdn.modrinth.com/data/lhGA9TYQ/versions/WbL7MStR/architectury-9.2.14-fabric.jar'
   echo ":: download Chunky"
   curl -sL --progress-bar -o /srv/fabric/mods/Chunky-1.3.146.jar 'https://cdn.modrinth.com/data/fALzjamp/versions/NHWYq9at/Chunky-1.3.146.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/ChunkyBorder-1.1.53.jar 'https://cdn.modrinth.com/data/s86X568j/versions/74w5ono0/ChunkyBorder-1.1.53.jar'
