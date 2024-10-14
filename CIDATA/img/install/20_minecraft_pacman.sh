@@ -54,6 +54,9 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/memoryleakfix-fabric-1.17+-1.1.5.jar 'https://cdn.modrinth.com/data/NRjRiSSD/versions/5xvCCRjJ/memoryleakfix-fabric-1.17%2B-1.1.5.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/ferritecore-6.0.1-fabric.jar 'https://cdn.modrinth.com/data/uXXizFIs/versions/unerR5MN/ferritecore-6.0.1-fabric.jar'
 
+  mcservermode=create
+  case "$mcservermode" in
+    create)
   echo ":: download Create"
   curl -sL --progress-bar -o /srv/fabric/mods/create-fabric-0.5.1-f-build.1417+mc1.20.1.jar 'https://cdn.modrinth.com/data/Xbc0uyRg/versions/h2HgGyvA/create-fabric-0.5.1-f-build.1417%2Bmc1.20.1.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/create-structures-0.1.1-1.20.1-FABRIC.jar 'https://cdn.modrinth.com/data/IAnP4np7/versions/nqsTHZwx/create-structures-0.1.1-1.20.1-FABRIC.jar'
@@ -63,6 +66,13 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/valkyrienskies-120-2.3.0-beta.5.jar 'https://cdn.modrinth.com/data/V5ujR2yw/versions/wDYLclLS/valkyrienskies-120-2.3.0-beta.5.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/Steam_Rails-1.6.4+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/ZzjhlDgM/versions/AJ3IGl3n/Steam_Rails-1.6.4%2Bfabric-mc1.20.1.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/createaddition-fabric+1.20.1-1.2.4.jar 'https://cdn.modrinth.com/data/kU1G12Nn/versions/vV4bZmhm/createaddition-fabric%2B1.20.1-1.2.4.jar'
+      curl -sL --progress-bar -o /srv/fabric/mods/CreateNumismatics-1.0.6+fabric-mc1.20.1.jar 'https://cdn.modrinth.com/data/Jdbbtt0i/versions/ExoJ4bOE/CreateNumismatics-1.0.6%2Bfabric-mc1.20.1.jar'
+      ;;
+    cobblemon)
+      echo ":: download Cobblemon"
+      curl -sL --progress-bar -o /srv/fabric/mods/Cobblemon-fabric-1.5.2+1.20.1.jar 'https://cdn.modrinth.com/data/MdwFAVRL/versions/EVozVxCq/Cobblemon-fabric-1.5.2%2B1.20.1.jar'
+      ;;
+  esac
 
   echo ":: download ControllerX"
   curl -sL --progress-bar -o /srv/fabric/mods/ControllerX-Fabric-20.1.4+pre.1.jar 'https://cdn.modrinth.com/data/gUv10ywC/versions/p3ruHkCa/ControllerX-Fabric-20.1.4%2Bpre.1.jar'
@@ -83,6 +93,10 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/LeavesBeGone-v8.0.0-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/AVq17PqV/versions/I6xyij66/LeavesBeGone-v8.0.0-1.20.1-Fabric.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/PuzzlesLib-v8.1.22-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/QAGBst4M/versions/aytL8HYY/PuzzlesLib-v8.1.22-1.20.1-Fabric.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/ForgeConfigAPIPort-v8.0.0-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/ohNO6lps/versions/CtENDTlF/ForgeConfigAPIPort-v8.0.0-1.20.1-Fabric.jar'
+  echo ":: download Clumps"
+  curl -sL --progress-bar -o /srv/fabric/mods/Clumps-fabric-1.20.1-12.0.0.4.jar 'https://cdn.modrinth.com/data/Wnxd13zP/versions/hefSwtn6/Clumps-fabric-1.20.1-12.0.0.4.jar'
+  echo ":: download Ambient"
+  curl -sL --progress-bar -o /srv/fabric/mods/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar 'https://cdn.modrinth.com/data/fM515JnW/versions/lx4E8S4G/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar'
 
   echo ":: Restart server"
   timeout 90 /bin/java -Xmx2G -jar fabric-server-$_fabric-$_loader-$_launcher-launcher.jar nogui <<<"stop" || true
