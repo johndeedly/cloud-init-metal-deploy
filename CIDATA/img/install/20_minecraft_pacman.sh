@@ -81,6 +81,7 @@ pushd /srv/fabric
   echo ":: download LeavesBeGone"
   curl -sL --progress-bar -o /srv/fabric/mods/LeavesBeGone-v8.0.0-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/AVq17PqV/versions/I6xyij66/LeavesBeGone-v8.0.0-1.20.1-Fabric.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/PuzzlesLib-v8.1.22-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/QAGBst4M/versions/aytL8HYY/PuzzlesLib-v8.1.22-1.20.1-Fabric.jar'
+  curl -sL --progress-bar -o /srv/fabric/mods/ForgeConfigAPIPort-v8.0.0-1.20.1-Fabric.jar 'https://cdn.modrinth.com/data/ohNO6lps/versions/CtENDTlF/ForgeConfigAPIPort-v8.0.0-1.20.1-Fabric.jar'
 
   echo ":: Restart server"
   timeout 90 /bin/java -Xmx2G -jar fabric-server-$_fabric-$_loader-$_launcher-launcher.jar nogui <<<"stop" || true
