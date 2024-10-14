@@ -27,15 +27,12 @@ _launcher=1.0.1
 mkdir -p /srv/fabric
 chown -R minecraft:users /srv/fabric
 chmod g+s /srv/fabric
-su -s /bin/bash - minecraft <<'EOS'
+su -s /bin/bash - minecraft <<EOS
 pushd /srv/fabric
-  _fabric=1.20.1
-  _loader=0.16.7
-  _launcher=1.0.1
-  curl -sL -o fabric-server-$_fabric-$_loader-$_launcher-launcher.jar https://meta.fabricmc.net/v2/versions/loader/$_fabric/$_loader/$_launcher/server/jar
+  curl -sL -o "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" "https://meta.fabricmc.net/v2/versions/loader/$_fabric/$_loader/$_launcher/server/jar"
   # will abort to tell the user to sign the eula
   echo ":: Start server (will fail as of missing eula)"
-  java -Xmx2G -jar fabric-server-$_fabric-$_loader-$_launcher-launcher.jar nogui || true
+  java -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui || true
   # sign eula
   echo ":: sign eula"
   sed -i 's/^eula=.*/eula=true/' /srv/fabric/eula.txt
@@ -55,7 +52,7 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/ferritecore-6.0.1-fabric.jar 'https://cdn.modrinth.com/data/uXXizFIs/versions/unerR5MN/ferritecore-6.0.1-fabric.jar'
 
   mcservermode=create
-  case "$mcservermode" in
+  case "\$mcservermode" in
     create)
       echo ":: download Create"
       curl -sL --progress-bar -o /srv/fabric/mods/create-fabric-0.5.1-f-build.1417+mc1.20.1.jar 'https://cdn.modrinth.com/data/Xbc0uyRg/versions/h2HgGyvA/create-fabric-0.5.1-f-build.1417%2Bmc1.20.1.jar'
@@ -99,7 +96,7 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar 'https://cdn.modrinth.com/data/fM515JnW/versions/lx4E8S4G/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar'
 
   echo ":: Restart server"
-  timeout 90 /bin/java -Xmx2G -jar fabric-server-$_fabric-$_loader-$_launcher-launcher.jar nogui <<<"stop" || true
+  timeout 90 /bin/java -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui <<<"stop" || true
 
   # configure floodgate to be the plugin handling authentication
   sed -i 's/auth-type:.*/auth-type: floodgate/' /srv/fabric/config/Geyser-Fabric/config.yml
@@ -110,7 +107,7 @@ EOS
 tee /usr/local/bin/fabric-server.sh <<EOF
 #!/usr/bin/env bash
 pushd /srv/fabric
-  /usr/bin/java -Xmx2G -jar fabric-server-$_fabric-$_loader-$_launcher-launcher.jar nogui
+  /usr/bin/java -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui
 popd
 EOF
 chmod +x /usr/local/bin/fabric-server.sh
