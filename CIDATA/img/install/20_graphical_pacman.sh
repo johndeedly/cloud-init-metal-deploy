@@ -15,19 +15,28 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
   pamac flatpak gnome-keyring librewolf betterbird virt-manager \
-  cinnamon cinnamon-translations connman cmst system-config-printer
+  cinnamon cinnamon-translations system-config-printer
 
 # enable some services
-systemctl enable cups connman libvirtd.service libvirtd.socket
+systemctl enable cups libvirtd.service libvirtd.socket
 
-# disable nm-applet
-mkdir -p /etc/skel/.config/autostart
-cp /etc/xdg/autostart/nm-applet.desktop /etc/skel/.config/autostart/
-tee -a /etc/skel/.config/autostart/nm-applet.desktop <<'EOF'
-X-GNOME-Autostart-enabled=false
+# fix phantom network devices in nm-applet
+tee /etc/NetworkManager/NetworkManager.conf <<'EOF'
+[main]
+plugins=ifupdown,keyfile
+dns=systemd-resolved
+
+[keyfile]
+unmanaged-devices=*,except:type:wifi,except:type:wwan,except:type:ethernet
+
+[ifupdown]
+managed=true
+
+[device]
+wifi.scan-rand-mac-address=yes
 EOF
-ln -s /bin/true /usr/local/bin/nm-applet
-systemctl mask NetworkManager NetworkManager-wait-online NetworkManager-dispatcher
+systemctl enable NetworkManager
+systemctl mask NetworkManager-wait-online NetworkManager-dispatcher
 
 # add all users to group libvirt
 getent passwd | while IFS=: read -r username x uid gid gecos home shell; do
@@ -100,7 +109,6 @@ dconf update
 mkdir -p /etc/dconf/db/local.d
 tee /etc/dconf/db/local.d/99-userdefaults <<EOF
 [org/cinnamon]
-enabled-applets=['panel1:left:0:menu@cinnamon.org:0', 'panel1:left:1:separator@cinnamon.org:1', 'panel1:left:2:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:sound@cinnamon.org:10', 'panel1:right:8:power@cinnamon.org:11', 'panel1:right:9:calendar@cinnamon.org:12', 'panel1:right:10:cornerbar@cinnamon.org:13']
 favorite-apps=['librewolf.desktop', 'betterbird.desktop', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
 [org/cinnamon/desktop/background]
