@@ -17,10 +17,11 @@ tee -a /etc/sudoers <<EOF
 minecraft ALL=(ALL) NOPASSWD:ALL
 EOF
 
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed jre-openjdk tmux
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed jre17-openjdk tmux
+archlinux-java set java-17-openjdk
 
 _fabric=1.20.1
-_loader=0.16.4
+_loader=0.16.7
 _launcher=1.0.1
   
 mkdir -p /srv/fabric
@@ -29,7 +30,7 @@ chmod g+s /srv/fabric
 su -s /bin/bash - minecraft <<'EOS'
 pushd /srv/fabric
   _fabric=1.20.1
-  _loader=0.16.4
+  _loader=0.16.7
   _launcher=1.0.1
   curl -sL -o fabric-server-$_fabric-$_loader-$_launcher-launcher.jar https://meta.fabricmc.net/v2/versions/loader/$_fabric/$_loader/$_launcher/server/jar
   # will abort to tell the user to sign the eula
