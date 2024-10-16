@@ -33,12 +33,11 @@ pushd /srv/fabric
   curl -sL -o "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" "https://meta.fabricmc.net/v2/versions/loader/$_fabric/$_loader/$_launcher/server/jar"
   # will abort to tell the user to sign the eula
   echo ":: Start server (will fail as of missing eula)"
-  java -Xms1G -Xmx6G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui || true
+  timeout 90 java -Xms1G -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui || true
   # sign eula
   echo ":: sign eula"
   sed -i 's/^eula=.*/eula=true/' /srv/fabric/eula.txt
-  sed -i 's/^difficulty=.*/difficulty=peaceful/' /srv/fabric/server.properties
-  sed -i 's/^motd=.*/motd=A Minecraft Server§r\n§4§o$_servername/' /srv/fabric/server.properties
+  sed -i 's/^motd=.*/motd=A Minecraft Server\\u00A7r\\n\\u00A74\\u00A7o$_servername/' /srv/fabric/server.properties
   
   echo ":: download fabric-api"
   curl -sL --progress-bar -o /srv/fabric/mods/fabric-api-0.92.2+1.20.1.jar 'https://cdn.modrinth.com/data/P7dR8mSH/versions/P7uGFii0/fabric-api-0.92.2%2B1.20.1.jar'
@@ -99,7 +98,7 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar 'https://cdn.modrinth.com/data/fM515JnW/versions/lx4E8S4G/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar'
 
   echo ":: Restart server"
-  timeout 90 /bin/java -Xms1G -Xmx6G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui <<<"stop" || true
+  timeout 90 /bin/java -Xms1G -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui <<<"stop" || true
 
   # configure floodgate to be the plugin handling authentication
   sed -i 's/auth-type:.*/auth-type: floodgate/' /srv/fabric/config/Geyser-Fabric/config.yml
