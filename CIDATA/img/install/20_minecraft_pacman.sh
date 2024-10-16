@@ -23,6 +23,7 @@ archlinux-java set java-17-openjdk
 _fabric=1.20.1
 _loader=0.16.7
 _launcher=1.0.1
+_servername=$(</etc/hostname)
   
 mkdir -p /srv/fabric
 chown -R minecraft:users /srv/fabric
@@ -36,6 +37,8 @@ pushd /srv/fabric
   # sign eula
   echo ":: sign eula"
   sed -i 's/^eula=.*/eula=true/' /srv/fabric/eula.txt
+  sed -i 's/^difficulty=.*/difficulty=peaceful/' /srv/fabric/server.properties
+  sed -i 's/^motd=.*/motd=A Minecraft Server§r\n§4§o$_servername/' /srv/fabric/server.properties
   
   echo ":: download fabric-api"
   curl -sL --progress-bar -o /srv/fabric/mods/fabric-api-0.92.2+1.20.1.jar 'https://cdn.modrinth.com/data/P7dR8mSH/versions/P7uGFii0/fabric-api-0.92.2%2B1.20.1.jar'
