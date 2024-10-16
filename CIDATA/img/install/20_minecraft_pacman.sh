@@ -96,9 +96,28 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/Clumps-fabric-1.20.1-12.0.0.4.jar 'https://cdn.modrinth.com/data/Wnxd13zP/versions/hefSwtn6/Clumps-fabric-1.20.1-12.0.0.4.jar'
   echo ":: download Ambient"
   curl -sL --progress-bar -o /srv/fabric/mods/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar 'https://cdn.modrinth.com/data/fM515JnW/versions/lx4E8S4G/AmbientSounds_FABRIC_v6.1.1_mc1.20.1.jar'
+  echo ":: download Mob Filter"
+  curl -sL --progress-bar -o /srv/fabric/mods/mobfilter-0.4.2+1.20.1.jar 'https://cdn.modrinth.com/data/gRn1FzwR/versions/jjjsoRT4/mobfilter-0.4.2%2B1.20.1.jar'
 
   echo ":: Restart server"
   timeout 90 /bin/java -Xms1G -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui <<<"stop" || true
+
+  # configure mobfilter to fully disable all vanilla monster mobs
+  tee /srv/fabric/config/mobfilter.json5 <<EOF
+{
+  rules: [
+    {
+      name: 'No vanilla monsters',
+      what: 'DISALLOW_SPAWN',
+      when: {
+        category: [ 'MONSTER' ],
+        entityId: [ 'minecraft:*' ]
+      }
+    }
+  ],
+  logLevel: 'INFO'
+}
+EOF
 
   # configure floodgate to be the plugin handling authentication
   sed -i 's/auth-type:.*/auth-type: floodgate/' /srv/fabric/config/Geyser-Fabric/config.yml
