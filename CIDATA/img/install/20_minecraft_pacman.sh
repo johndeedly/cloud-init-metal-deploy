@@ -24,6 +24,7 @@ _fabric=1.20.1
 _loader=0.16.7
 _launcher=1.0.1
 _servername=$(</etc/hostname)
+_mcservermode=create
   
 mkdir -p /srv/fabric
 chown -R minecraft:users /srv/fabric
@@ -37,7 +38,7 @@ pushd /srv/fabric
   # sign eula
   echo ":: sign eula"
   sed -i 's/^eula=.*/eula=true/' /srv/fabric/eula.txt
-  sed -i 's/^motd=.*/motd=A Minecraft Server\\u00A7r\\n\\u00A74\\u00A7o$_servername/' /srv/fabric/server.properties
+  sed -i 's/^motd=.*/motd=A Minecraft Server (§1§n$_servername§r)/' /srv/fabric/server.properties
   
   echo ":: download fabric-api"
   curl -sL --progress-bar -o /srv/fabric/mods/fabric-api-0.92.2+1.20.1.jar 'https://cdn.modrinth.com/data/P7dR8mSH/versions/P7uGFii0/fabric-api-0.92.2%2B1.20.1.jar'
@@ -53,7 +54,7 @@ pushd /srv/fabric
   curl -sL --progress-bar -o /srv/fabric/mods/memoryleakfix-fabric-1.17+-1.1.5.jar 'https://cdn.modrinth.com/data/NRjRiSSD/versions/5xvCCRjJ/memoryleakfix-fabric-1.17%2B-1.1.5.jar'
   curl -sL --progress-bar -o /srv/fabric/mods/ferritecore-6.0.1-fabric.jar 'https://cdn.modrinth.com/data/uXXizFIs/versions/unerR5MN/ferritecore-6.0.1-fabric.jar'
 
-  mcservermode=create
+  mcservermode="$_mcservermode"
   case "\$mcservermode" in
     create)
       echo ":: download Create"
@@ -102,15 +103,40 @@ pushd /srv/fabric
   echo ":: Restart server"
   timeout 90 /bin/java -Xms1G -Xmx2G -jar "fabric-server-$_fabric-$_loader-$_launcher-launcher.jar" nogui <<<"stop" || true
 
-  # configure mobfilter to fully disable all vanilla monster mobs
+  case "\$mcservermode" in
+    create)
+      # configure mobfilter to only allow monster spawn on full moon, otherwise only below sea level
+      tee /srv/fabric/config/mobfilter.json5 <<EOF
+{ 
+  rules: [
+    {
+      name: 'Only allow monster spawns during full moon',
+      what: 'ALLOW_SPAWN',
+      when: {
+        category: [ 'MONSTER' ],
+        moonPhase: [ 1 ]
+      }
+    }, {
+      name: 'On all other moon phases no monsters shall spawn above sea level',
+      what: 'DISALLOW_SPAWN',
+      when: {
+        'category': [ 'MONSTER' ]
+        'blockY': [ 'MIN', 62 ]
+      }
+    }
+  ]
+}
+EOF
+      ;;
+    cobblemon)
+      # configure mobfilter to fully disable all vanilla entities
   tee /srv/fabric/config/mobfilter.json5 <<EOF
 {
   rules: [
     {
-      name: 'No vanilla monsters',
+      name: 'No vanilla entities',
       what: 'DISALLOW_SPAWN',
       when: {
-        category: [ 'MONSTER' ],
         entityId: [ 'minecraft:*' ]
       }
     }
@@ -118,6 +144,8 @@ pushd /srv/fabric
   logLevel: 'INFO'
 }
 EOF
+      ;;
+  esac
 
   # configure floodgate to be the plugin handling authentication
   sed -i 's/auth-type:.*/auth-type: floodgate/' /srv/fabric/config/Geyser-Fabric/config.yml
