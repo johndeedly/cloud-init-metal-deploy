@@ -353,6 +353,7 @@ write_files:
       arch-chroot /mnt systemctl mask time-sync.target
 
       # finalize /mnt
+      cp /cidata_log /mnt/cidata_log || true
       sync
       umount -l /mnt
       
