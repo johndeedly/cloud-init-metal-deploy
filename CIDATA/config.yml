@@ -1,0 +1,71 @@
+distros:
+  archlinux: pacman
+  debian: apt
+  ubuntu: apt
+  rocky: yum
+images:
+  archlinux: Arch-Linux-x86_64-cloudimg.qcow2
+  debian: debian-12-generic-amd64.qcow2
+  ubuntu: noble-server-cloudimg-amd64.img
+  rocky: rocky-9-genericcloud-base.latest.x86_64.qcow2
+files:
+  apt:
+    graphical:
+      - install/20_graphical_apt.sh
+    mirror:
+      - install/20_localmirror_apt.sh
+    proxmox:
+      - per-boot/10_proxmox_step4.sh
+      - per-boot/20_proxmox_step3.sh
+      - per-boot/30_proxmox_step2.sh
+      - per-boot/40_proxmox_step1.sh
+  pacman:
+    graphical:
+      - install/20_graphical_pacman.sh
+    mirror:
+      - install/20_localmirror_pacman.sh
+    minecraft:
+      - install/20_minecraft_pacman.sh
+    router:
+      - install/20_router_pacman.sh
+    pxe:
+      - install/pxe
+      - install/pxe/pxe.conf
+      - install/pxe/pxe.preset
+      - install/pxe/pxelinux.cfg.default
+      - install/pxe/hooks
+      - install/pxe/hooks/pxe
+      - install/pxe/hooks/pxe_cifs
+      - install/pxe/hooks/pxe_http
+      - install/pxe/hooks/pxe_iscsi
+      - install/pxe/hooks/pxe_nbd
+      - install/pxe/hooks/pxe_nfs
+      - install/pxe/hooks/pxe_nvmeof
+      - install/pxe/hooks/pxe_wg
+      - install/pxe/install
+      - install/pxe/install/pxe
+      - install/pxe/install/pxe_cifs
+      - install/pxe/install/pxe_http
+      - install/pxe/install/pxe_iscsi
+      - install/pxe/install/pxe_nbd
+      - install/pxe/install/pxe_nfs
+      - install/pxe/install/pxe_nvmeof
+      - install/pxe/install/pxe_wg
+      - install/99_pxe_image.sh
+  yum:
+    graphical:
+      - install/20_graphical_yum.sh
+setup:
+  distro: archlinux
+  options: []
+  env_vars: []
+  target: /dev/vda
+
+# == example usage ==
+# setup:
+#   distro: archlinux
+# options:
+#   - minecraft
+# env_vars:
+#   - MCSERVERMODE=create
+# target: /dev/vda

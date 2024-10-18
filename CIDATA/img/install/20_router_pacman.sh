@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# remove line to enable build
-exit 0
-if ! [ -f /bin/pacman ]; then
-    exit 0
-fi
-
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd
 
 DHCP_ADDITIONAL_SETUP=(

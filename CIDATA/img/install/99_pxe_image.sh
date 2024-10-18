@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# remove line to enable build
-exit 0
-if ! [ -f /bin/pacman ]; then
-    exit 0
-fi
-
 # create a squashfs snapshot based on rootfs
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed squashfs-tools
 mkdir -p /share/pxe/arch/x86_64

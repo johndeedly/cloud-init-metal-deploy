@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# remove line to enable build
-exit 0
-if ! [ -f /bin/pacman ]; then
-    exit 0
-fi
-
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   pipewire pipewire-pulse pipewire-jack pipewire-alsa wireplumber pamixer pavucontrol playerctl alsa-utils qpwgraph rtkit realtime-privileges \
   xorg-server xorg-xinit xorg-xrandr xautolock slock xclip xsel brightnessctl gammastep arandr dunst libnotify engrampa \

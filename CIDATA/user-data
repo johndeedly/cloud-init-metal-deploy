@@ -202,7 +202,7 @@ write_files:
       done | xargs "${gpg_locate_external[@]}"
 
       sed -i 's/^#\?ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf
-      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base arch-install-scripts
+      LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base arch-install-scripts yq
 
       if [ -f /cidata/meta-data ] && [ -d /cidata/img ]; then
         mkdir -p /iso
@@ -222,16 +222,23 @@ write_files:
         exit 1
       fi
 
-      CLOUD_IMAGE_PATH=$(find /iso/img/ -type f -size +50M \( -iname '*.qcow2' -o -iname '*.img' -o -iname '*.tar.xz' \) | head -n1)
-      if [ -e /dev/nvme0n1 ]; then
-        TARGET_DEVICE="/dev/nvme0n1"
-      elif [ -e /dev/sda ]; then
-        TARGET_DEVICE="/dev/sda"
-      elif [ -e /dev/vda ]; then
-        TARGET_DEVICE="/dev/vda"
-      else
-        echo "!! no target device"
+      CLOUD_IMAGE_PATH="/iso/img/$(yq -r '.setup as $setup | .images[$setup.distro]' /iso/config.yml)"
+      if [ -z "$CLOUD_IMAGE_PATH" ]; then
+        echo "!! missing cloud image"
         exit 1
+      fi
+      TARGET_DEVICE=$(yq -r '.setup.target' /iso/config.yml)
+      if [ -z "$TARGET_DEVICE" ]; then
+        if [ -e /dev/nvme0n1 ]; then
+          TARGET_DEVICE="/dev/nvme0n1"
+        elif [ -e /dev/sda ]; then
+          TARGET_DEVICE="/dev/sda"
+        elif [ -e /dev/vda ]; then
+          TARGET_DEVICE="/dev/vda"
+        else
+          echo "!! no target device"
+          exit 1
+        fi
       fi
       echo "CLOUD-IMAGE: ${CLOUD_IMAGE_PATH}, TARGET: ${TARGET_DEVICE}"
       
@@ -282,10 +289,24 @@ write_files:
         umount -l /mnt
       fi
 
+      # prepare build files for next stage
+      mkdir -p /to_copy/{install,per-boot,per-instance,per-once}
+      echo ":: prepare build files for next stage"
+      yq -r '.setup as $setup | .distros[$setup.distro] as $distro | .files[$distro].[$setup.options[]][]' /iso/config.yml | while read -r line; do
+        if [ -n "$line" ] && [ -e "/iso/img/$line" ]; then
+          if [ -d "/iso/img/$line" ]; then
+            mkdir -p "/to_copy/$line"
+          elif [ -f "/iso/img/$line" ]; then
+            cp "/iso/img/$line" "/to_copy/$line"
+          fi
+        fi
+      done
+      find /to_copy -type f | sort
+      
       # write the cidata iso to the cidata partition on disk
       dd if=/dev/zero of=/dev/disk/by-partlabel/cidata bs=1M count=2 iflag=fullblock status=progress
       mkfs.vfat -n CIDATA /dev/disk/by-partlabel/cidata
-      mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config /iso/img/install /iso/img/per-boot /iso/img/per-instance /iso/img/per-once ::
+      mcopy -oi /dev/disk/by-partlabel/cidata /iso/config.yml /iso/img/meta-data /iso/img/user-data /iso/img/vendor-data /iso/img/network-config /to_copy/install /to_copy/per-boot /to_copy/per-instance /to_copy/per-once ::
       mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/install/pxe ::/install
       mcopy -oi /dev/disk/by-partlabel/cidata /iso/img/install/pxe/hooks /iso/img/install/pxe/install ::/install/pxe
       

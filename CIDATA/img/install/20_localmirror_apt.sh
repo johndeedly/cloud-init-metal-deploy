@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-# remove line to enable build
-exit 0
-if ! [ -f /bin/apt ]; then
-    exit 0
-fi
-
 if grep -q Debian /proc/version; then
 # enable non-free
 sed -i 's/main contrib$/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources

@@ -1060,7 +1060,9 @@ write_files:
       if [ -d /cidata/install ] && [ -n "$(ls /cidata/install)" ]; then
         for script in /cidata/install/*.sh; do
           # create a fully logged in shell with all necessary systemd services attached
-          machinectl shell root@ /bin/bash "$script"
+          ENV_VARS=( $(yq -r '.setup.env_vars[] | "--setenv=" + .' /cidata/config.yml) )
+          echo ":: machinectl shell ${ENV_VARS[@]} root@ /bin/bash $script"
+          machinectl shell "${ENV_VARS[@]}" root@ /bin/bash "$script"
         done
       fi
       if [ -d /cidata/per-boot ] && [ -n "$(ls /cidata/per-boot)" ]; then

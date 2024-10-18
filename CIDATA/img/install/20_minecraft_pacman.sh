@@ -4,12 +4,6 @@
 # this script does work mostly and for the broken parts it just needs the scripts
 # from my other projects to be copied over. please be patient...
 
-# remove line to enable build
-exit 0
-if ! [ -f /bin/pacman ]; then
-    exit 0
-fi
-
 useradd -m -g users -G wheel minecraft
 cp /etc/sudoers /etc/sudoers.bak
 tee -a /etc/sudoers <<EOF
@@ -24,7 +18,11 @@ _fabric=1.20.1
 _loader=0.16.7
 _launcher=1.0.1
 _servername=$(</etc/hostname)
-_mcservermode=create
+if [ -n "$MCSERVERMODE" ]; then
+  _mcservermode="$MCSERVERMODE"
+else
+  _mcservermode=cobblemon
+fi
   
 mkdir -p /srv/fabric
 chown -R minecraft:users /srv/fabric
@@ -130,7 +128,7 @@ EOF
       ;;
     cobblemon)
       # configure mobfilter to fully disable all vanilla entities
-  tee /srv/fabric/config/mobfilter.json5 <<EOF
+      tee /srv/fabric/config/mobfilter.json5 <<EOF
 {
   rules: [
     {
