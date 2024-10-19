@@ -797,16 +797,17 @@ write_files:
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install systemd-container
       elif [ -e /bin/pacman ]; then
-        LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
+        # main repo key from website
+        LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 3056513887B78AEB --keyserver hkp://keys.gnupg.net
         LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 3056513887B78AEB
-        LC_ALL=C yes | LC_ALL=C pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
-        LC_ALL=C yes | LC_ALL=C pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' ||
-          curl -sL 'https://raw.githubusercontent.com/chaotic-aur/chaotic-aur.github.io/refs/heads/master/mirrorlist.txt' > /etc/pacman.d/chaotic-mirrorlist
-        tee -a /etc/pacman.conf <<EOF
+        # garuda build key (remove when problems are fixed by the chaotic-aur team)
+        LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 349BC7808577C592 --keyserver hkp://keys.gnupg.net
+        LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 349BC7808577C592
+        tee -a /etc/pacman.conf <<'EOF'
       [chaotic-aur]
-      Include = /etc/pacman.d/chaotic-mirrorlist
+      Server = https://geo-mirror.chaotic.cx/$repo/$arch
       EOF
-        LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm
+        LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm chaotic-keyring
       elif [ -e /bin/yum ]; then
         LC_ALL=C yes | LC_ALL=C dnf install epel-release
         LC_ALL=C yes | LC_ALL=C dnf upgrade
