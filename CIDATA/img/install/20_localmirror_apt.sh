@@ -148,7 +148,7 @@ EOF
 
 tee -a /etc/fstab <<EOF
 
-overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/apt/mirror 0 0
+overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/apt/mirror:/var/empty 0 0
 EOF
 
 LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install nginx

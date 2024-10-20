@@ -125,7 +125,7 @@ EOF
 
 tee -a /etc/fstab <<EOF
 
-overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/mirror 0 0
+overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/pacman/mirror:/var/empty 0 0
 EOF
 
 systemctl enable nginx.service pacsync.timer
