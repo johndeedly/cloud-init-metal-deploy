@@ -57,4 +57,5 @@ xorriso -volid "CIDATA" \
         -map CIDATA/user-data /user-data \
         -map CIDATA/vendor-data /vendor-data \
         -map CIDATA/network-config /network-config \
+        -map CIDATA/config.yml /config.yml \
         -map CIDATA/img/ /img/
