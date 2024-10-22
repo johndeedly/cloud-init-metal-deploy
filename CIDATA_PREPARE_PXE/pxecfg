@@ -1,2 +1,0 @@
-HOOKS=(base udev keyboard modconf pxe pxe_http block filesystems)
-COMPRESSION="zstd"
