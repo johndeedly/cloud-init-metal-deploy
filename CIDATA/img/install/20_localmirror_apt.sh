@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
+LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install nginx
+
 if grep -q Debian /proc/version; then
 # enable non-free
 sed -i 's/main contrib$/main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
 fi
 
-mkdir -p /var/cache/apt/mirror
+mkdir -p /var/cache/apt/mirror /var/empty
 
 if grep -q Ubuntu /proc/version; then
 tee /usr/local/bin/aptsync.sh <<'EOF'
@@ -102,7 +104,7 @@ WantedBy=multi-user.target
 EOF
 
 tee /etc/nginx/nginx.conf <<EOF
-user http;
+user www-data;
 worker_processes auto;
 worker_cpu_affinity auto;
 
@@ -150,8 +152,6 @@ tee -a /etc/fstab <<EOF
 
 overlay /srv/http overlay noauto,x-systemd.automount,lowerdir=/var/cache/apt/mirror:/var/empty 0 0
 EOF
-
-LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install nginx
 
 systemctl enable nginx.service aptsync.timer
 
