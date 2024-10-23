@@ -1064,6 +1064,9 @@ write_files:
           [ "/cidata/install/*.sh" = "$script" ] && break
           # create a fully logged in shell with all necessary systemd services attached
           ENV_VARS=( $(yq -r '.setup.env_vars[] | "--setenv=" + .' /cidata/config.yml) )
+          if [ -f /bin/apt ]; then
+            ENV_VARS+=( "--setenv=DEBIAN_FRONTEND=noninteractive" )
+          fi
           echo ":: machinectl shell ${ENV_VARS[@]} root@ /bin/bash $script"
           machinectl shell "${ENV_VARS[@]}" root@ /bin/bash "$script"
         done
