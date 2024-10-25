@@ -44,30 +44,6 @@ bootcmd:
   - loadkeys de-latin1
 
 write_files:
-  # all interfaces perform a dhcp lookup
-  - path: /etc/systemd/network/20-wired.network
-    content: |
-      [Match]
-      Name=en* eth*
-      Type=ether
-
-      [Network]
-      DHCP=yes
-      MulticastDNS=yes
-
-      [DHCPv4]
-      RouteMetric=10
-
-      [IPv6AcceptRA]
-      RouteMetric=10
-
-      [DHCPPrefixDelegation]
-      RouteMetric=10
-
-      [IPv6Prefix]
-      RouteMetric=10
-    owner: 'root:root'
-    permissions: '0644'
   # only one interface needs to be configured to be "online"
   - path: /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf
     content: |
@@ -333,8 +309,7 @@ write_files:
       mount "${ROOT_PART[0]}" /mnt
       
       # config files for network
-      mkdir -p /mnt/etc/systemd/network/ /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
-      cp /etc/systemd/network/20-wired.network /mnt/etc/systemd/network/20-wired.network || true
+      mkdir -p /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/
       cp /etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf /mnt/etc/systemd/system/systemd-networkd-wait-online.service.d/wait-online-any.conf || true
       
       # config files for i18n

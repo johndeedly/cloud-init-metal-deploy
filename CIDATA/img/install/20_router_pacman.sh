@@ -323,3 +323,9 @@ firewall-offline-cmd --zone=public --add-service=ntp
 firewall-offline-cmd --zone=public --add-service=tftp
 firewall-offline-cmd --zone=public --add-service=http
 firewall-offline-cmd --zone=public --add-port=8443/tcp
+
+# disable network config in cloud init
+tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
+network: {config: disabled}
+EOF
+find /etc/systemd/network -name "10-cloud-init*.network" -print -delete
