@@ -62,6 +62,7 @@ Name=eth0
 [Network]
 MACVLAN=wan0
 MACVLAN=lan0
+MACVLAN=mgmt0
 LinkLocalAddressing=no
 LLDP=no
 EmitLLDP=no
@@ -76,7 +77,7 @@ Name=wan0
 Kind=macvlan
 
 [MACVLAN]
-Mode=bridge
+Mode=private
 EOF
 tee /etc/systemd/network/15-lan0-bridge.netdev <<EOF
 [NetDev]
@@ -84,7 +85,15 @@ Name=lan0
 Kind=macvlan
 
 [MACVLAN]
-Mode=bridge
+Mode=private
+EOF
+tee /etc/systemd/network/15-mgmt0-bridge.netdev <<EOF
+[NetDev]
+Name=mgmt0
+Kind=macvlan
+
+[MACVLAN]
+Mode=private
 EOF
 tee /etc/systemd/network/15-lan0-vlan-user.netdev <<EOF
 [NetDev]
@@ -103,7 +112,7 @@ Kind=vlan
 Id=32
 EOF
 
-# configure wan0, lan0 and vlans local and guest
+# configure wan0, lan0, mgmt0 and vlans local and guest
 tee /etc/systemd/network/20-wan0.network <<EOF
 [Match]
 Name=wan0
@@ -111,6 +120,8 @@ Name=wan0
 [Network]
 DHCP=yes
 MulticastDNS=yes
+DNSOverTLS=opportunistic
+DNSSEC=allow-downgrade
 IPv4Forwarding=yes
 IPv6Forwarding=yes
 IPMasquerade=both
@@ -139,6 +150,17 @@ LLDP=no
 EmitLLDP=no
 IPv6AcceptRA=no
 IPv6SendRA=no
+EOF
+tee /etc/systemd/network/20-mgmt0.network <<EOF
+[Match]
+Name=mgmt0
+
+[Network]
+Address=172.24.0.1/24
+Address=fdb8:075f:c8ee:fb66::1/64
+
+[Address]
+AddPrefixRoute=no
 EOF
 tee /etc/systemd/network/20-lan0-vlan-user.network <<EOF
 [Match]
