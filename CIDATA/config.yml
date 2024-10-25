@@ -55,6 +55,8 @@ files:
   yum:
     graphical:
       - install/20_graphical_yum.sh
+    mirror:
+      - install/20_localmirror_yum.sh
 setup:
   distro: archlinux
   options: []
