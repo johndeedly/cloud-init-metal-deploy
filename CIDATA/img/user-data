@@ -785,10 +785,11 @@ write_files:
       EOF
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm chaotic-keyring
       elif [ -e /bin/yum ]; then
-        LC_ALL=C yes | LC_ALL=C dnf install epel-release
-        LC_ALL=C yes | LC_ALL=C dnf upgrade
+        LC_ALL=C yes | LC_ALL=C dnf install -y epel-release
+        LC_ALL=C yes | LC_ALL=C dnf config-manager --enable crb
+        LC_ALL=C yes | LC_ALL=C dnf upgrade -y
         LC_ALL=C yes | LC_ALL=C yum check-update
-        LC_ALL=C yes | LC_ALL=C yum update
+        LC_ALL=C yes | LC_ALL=C yum update -y
         LC_ALL=C yes | LC_ALL=C yum install -y systemd-container
       fi
 
@@ -863,10 +864,10 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum install -y \
           systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
           curl wget zstd rsyslog nano npm htop btop git firewalld \
-          bash-completion mc moreutils \
-          lshw libxml2 jq polkit man-db \
+          bash-completion ncdu pv mc fzf moreutils \
+          lshw libxml2 jq polkit man-db trash-cli \
           openssh wireguard-tools nfs-utils \
-          gvfs gvfs-smb cifs-utils unzip rsync xdg-user-dirs xdg-utils \
+          gvfs gvfs-smb cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
           openldap openldap-clients nss-pam-ldapd
         download_nerdfont
         download_starship
