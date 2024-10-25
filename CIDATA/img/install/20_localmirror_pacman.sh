@@ -33,13 +33,28 @@ while read -r repo; do
     ln -s "/var/lib/pacman/sync/$repo.files" "/var/cache/pacman/mirror/$repo/$repo.files" || true
     /usr/bin/expac -Ss '%r/%n' | grep "^$repo/" | xargs pacman -Swddp --logfile "/dev/null" --cachedir "/dev/null" | while read -r line; do
       echo "$line"
-      echo "$line.sig"
+      echo "$line".sig
     done > /tmp/mirror_url_list.txt
     # continue unfinished downloads and skip already downloaded ones, use timestamps,
     # download to target path, load download list from file, show progress in larger size steps per dot
     wget -c -N -P "/var/cache/pacman/mirror/$repo" -i /tmp/mirror_url_list.txt --progress=dot:mega
+    # remove older package versions (sort -r: newest first) when packages count is larger than 3 (cnt[key]>3)
+    find "/var/cache/pacman/mirror/$repo" -name '*.pkg.tar.zst' -printf "%P %T+\n" | sort -r -t' ' -k2,2 | awk -F '-' '{
+      key=$1
+      for (i=2;i<NF-4;i++){key=sprintf("%s-%s",key,$i)}
+      cnt[key]++
+      if(cnt[key]>3){
+        out=$1
+        for (i=2;i<=NF;i++){out=sprintf("%s-%s",out,$i)}
+        printf "%i %s\n",cnt[key],out
+      }
+    }' | while read -r nr pkg ctm; do
+      echo "removing /var/cache/pacman/mirror/$repo/$pkg"
+      rm "/var/cache/pacman/mirror/$repo/$pkg"
+      echo "removing /var/cache/pacman/mirror/$repo/$pkg".sig
+      rm "/var/cache/pacman/mirror/$repo/$pkg".sig
+    done
     rm /tmp/mirror_url_list.txt
-    /usr/bin/paccache -r --cachedir "/var/cache/pacman/mirror/$repo/"
 done <<EOX
 core
 extra
