@@ -18,14 +18,19 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
 # force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # download to target path, load download list from file, show progress in larger size steps per dot
 wget -x -nH -c -N -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega
-find /var/cache/apt/mirror -name '*.deb' | cut -d'_' -f1 | sort | uniq -c | while read -r nr pkg; do
-  if ((nr > 3)); then
-    pkg_files=( $(ls -t "$pkg"_*.deb) )
-    unset pkg_files[0]
-    unset pkg_files[0]
-    unset pkg_files[0]
-    rm "${pkg_files[@]}"
-  fi
+# remove older package versions (sort -r: newest first) when packages count is larger than 3 (cnt[key]>3)
+find /var/cache/apt/mirror -name '*.deb' -printf "%P %T+\n" | sort -r -t' ' -k2,2 | awk -F '_' '{
+  key=$1
+  for (i=2;i<NF-1;i++){key=sprintf("%s_%s",key,$i)}
+  cnt[key]++
+  if(cnt[key]>3){
+    out=$1
+    for (i=2;i<=NF;i++){out=sprintf("%s_%s",out,$i)}
+    printf "%i %s\n",cnt[key],out
+  }
+}' | while read -r nr pkg ctm; do
+  echo "removing /var/cache/apt/mirror/$pkg"
+  rm "/var/cache/apt/mirror/$pkg"
 done
 tee /tmp/mirror_url_list.txt <<EOX
 http://archive.ubuntu.com/ubuntu/dists/noble/
@@ -50,14 +55,19 @@ LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y update
 # force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # download to target path, load download list from file, show progress in larger size steps per dot
 wget -x -nH -c -N -P /var/cache/apt/mirror -i /tmp/mirror_url_list.txt --progress=dot:mega
-find /var/cache/apt/mirror -name '*.deb' | cut -d'_' -f1 | sort | uniq -c | while read -r nr pkg; do
-  if ((nr > 3)); then
-    pkg_files=( $(ls -t "$pkg"_*.deb) )
-    unset pkg_files[0]
-    unset pkg_files[0]
-    unset pkg_files[0]
-    rm "${pkg_files[@]}"
-  fi
+# remove older package versions (sort -r: newest first) when packages count is larger than 3 (cnt[key]>3)
+find /var/cache/apt/mirror -name '*.deb' -printf "%P %T+\n" | sort -r -t' ' -k2,2 | awk -F '_' '{
+  key=$1
+  for (i=2;i<NF-1;i++){key=sprintf("%s_%s",key,$i)}
+  cnt[key]++
+  if(cnt[key]>3){
+    out=$1
+    for (i=2;i<=NF;i++){out=sprintf("%s_%s",out,$i)}
+    printf "%i %s\n",cnt[key],out
+  }
+}' | while read -r nr pkg ctm; do
+  echo "removing /var/cache/apt/mirror/$pkg"
+  rm "/var/cache/apt/mirror/$pkg"
 done
 tee /tmp/mirror_url_list.txt <<EOX
 https://deb.debian.org/debian/dists/bookworm/
