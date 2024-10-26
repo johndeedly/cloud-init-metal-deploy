@@ -29,6 +29,7 @@ managed=true
 [device]
 wifi.scan-rand-mac-address=yes
 EOF
+systemctl unmask NetworkManager || true
 systemctl enable NetworkManager
 systemctl mask NetworkManager-wait-online NetworkManager-dispatcher
 
