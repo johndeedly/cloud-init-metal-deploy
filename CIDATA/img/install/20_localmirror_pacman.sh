@@ -38,22 +38,6 @@ while read -r repo; do
     # continue unfinished downloads and skip already downloaded ones, use timestamps,
     # download to target path, load download list from file, show progress in larger size steps per dot
     wget -c -N -P "/var/cache/pacman/mirror/$repo" -i /tmp/mirror_url_list.txt --progress=dot:mega
-    # remove older package versions (sort -r: newest first) when packages count is larger than 3 (cnt[key]>3)
-    find "/var/cache/pacman/mirror/$repo" -name '*.pkg.tar.zst' -printf "%P %T+\n" | sort -r -t' ' -k2,2 | awk -F '-' '{
-      key=$1
-      for (i=2;i<NF-4;i++){key=sprintf("%s-%s",key,$i)}
-      cnt[key]++
-      if(cnt[key]>3){
-        out=$1
-        for (i=2;i<=NF;i++){out=sprintf("%s-%s",out,$i)}
-        printf "%i %s\n",cnt[key],out
-      }
-    }' | while read -r nr pkg ctm; do
-      echo "removing /var/cache/pacman/mirror/$repo/$pkg"
-      rm "/var/cache/pacman/mirror/$repo/$pkg"
-      echo "removing /var/cache/pacman/mirror/$repo/$pkg".sig
-      rm "/var/cache/pacman/mirror/$repo/$pkg".sig
-    done
     rm /tmp/mirror_url_list.txt
 done <<EOX
 core
@@ -61,6 +45,38 @@ extra
 multilib
 chaotic-aur
 EOX
+
+mkdir -p /var/cache/pacman/mirror/month/{core,extra}
+tee /tmp/mirror_url_list.txt <<EOS
+https://archive.archlinux.org/repos/month/core/os/x86_64/
+EOS
+# continue unfinished downloads and skip already downloaded ones, use timestamps, skip first five path elements,
+# download to target path, load download list from file, show progress in larger size steps per dot
+wget -x -nH -c -N --cut-dirs=5 -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/core -i /tmp/mirror_url_list.txt --progress=dot:mega
+tee /tmp/mirror_url_list.txt <<EOS
+https://archive.archlinux.org/repos/month/extra/os/x86_64/
+EOS
+# continue unfinished downloads and skip already downloaded ones, use timestamps, skip first five path elements,
+# download to target path, load download list from file, show progress in larger size steps per dot
+wget -x -nH -c -N --cut-dirs=5 -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/extra -i /tmp/mirror_url_list.txt --progress=dot:mega
+rm /tmp/mirror_url_list.txt
+
+# remove older package versions (sort -r: newest first) when packages count is larger than 3 (cnt[key]>3)
+find "/var/cache/pacman/mirror" -name '*.pkg.tar.zst' -printf "%P %T+\n" | sort -r -t' ' -k2,2 | awk -F '-' '{
+  key=$1
+  for (i=2;i<NF-4;i++){key=sprintf("%s-%s",key,$i)}
+  cnt[key]++
+  if(cnt[key]>3){
+    out=$1
+    for (i=2;i<=NF;i++){out=sprintf("%s-%s",out,$i)}
+    printf "%i %s\n",cnt[key],out
+  }
+}' | while read -r nr pkg ctm; do
+  echo "removing /var/cache/pacman/mirror/$pkg"
+  rm "/var/cache/pacman/mirror/$pkg"
+  echo "removing /var/cache/pacman/mirror/$pkg".sig
+  rm "/var/cache/pacman/mirror/$pkg".sig
+done
 EOF
 chmod +x /usr/local/bin/pacsync.sh
 
