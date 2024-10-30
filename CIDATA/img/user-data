@@ -879,7 +879,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           systemd-homed build-essential \
           doas curl wget zstd rsyslog nano npm htop btop git firewalld \
-          bash-completion ncdu pv mc lfm fzf moreutils \
+          bash-completion ncdu pv mc ranger fzf moreutils \
           lshw libxml2 jq polkitd man manpages-de trash-cli \
           openssh-server openssh-client wireguard-tools nfs-kernel-server \
           gvfs gvfs-backends cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
@@ -897,7 +897,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
           pacman-contrib starship ttf-terminus-nerd ttf-nerd-fonts-symbols powershell-bin base-devel neovim yq \
           doas curl wget zstd rsyslog nano npm htop btop git firewalld \
-          bash-completion ncdu viu pv mc lf fzf moreutils \
+          bash-completion ncdu viu pv mc ranger fzf moreutils \
           lshw libxml2 jq polkit core/man man-pages-de trash-cli \
           openssh wireguard-tools nfs-utils \
           gvfs gvfs-smb cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
@@ -910,7 +910,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum install -y \
           systemd-networkd cmake make automake gcc gcc-c++ kernel-devel \
           curl wget zstd rsyslog nano npm htop btop git firewalld \
-          bash-completion ncdu pv mc fzf moreutils \
+          bash-completion ncdu pv mc ranger fzf moreutils \
           lshw libxml2 jq polkit man-db trash-cli \
           openssh wireguard-tools nfs-utils \
           gvfs gvfs-smb cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
