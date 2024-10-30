@@ -53,19 +53,19 @@ https://archive.archlinux.org/repos/${ARCHIVE_BASE}/core/os/x86_64/
 EOS
 # continue unfinished downloads and skip already downloaded ones, use timestamps, skip first five path elements,
 # download to target path, load download list from file, show progress in larger size steps per dot
-wget -c -N -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/core -i /tmp/mirror_url_list.txt --progress=dot:mega
+wget -x -nH -c -N --cut-dirs=7 -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/core -i /tmp/mirror_url_list.txt --progress=dot:mega
 tee /tmp/mirror_url_list.txt <<EOS
 https://archive.archlinux.org/repos/${ARCHIVE_BASE}/extra/os/x86_64/
 EOS
 # continue unfinished downloads and skip already downloaded ones, use timestamps, skip first five path elements,
 # download to target path, load download list from file, show progress in larger size steps per dot
-wget -c -N -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/extra -i /tmp/mirror_url_list.txt --progress=dot:mega
+wget -x -nH -c -N --cut-dirs=7 -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/extra -i /tmp/mirror_url_list.txt --progress=dot:mega
 tee /tmp/mirror_url_list.txt <<EOS
 https://archive.archlinux.org/repos/${ARCHIVE_BASE}/multilib/os/x86_64/
 EOS
 # continue unfinished downloads and skip already downloaded ones, use timestamps, skip first five path elements,
 # download to target path, load download list from file, show progress in larger size steps per dot
-wget -c -N -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/multilib -i /tmp/mirror_url_list.txt --progress=dot:mega
+wget -x -nH -c -N --cut-dirs=7 -r -np -R "index.html*" -e robots=off -P /var/cache/pacman/mirror/month/multilib -i /tmp/mirror_url_list.txt --progress=dot:mega
 ARCHIVE_BASE=$(date +%Y.%m.01)
 tee /tmp/mirror_url_list.txt <<EOS
 https://archive.archlinux.org/iso/${ARCHIVE_BASE}/archlinux-x86_64.iso
