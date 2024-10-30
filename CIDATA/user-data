@@ -139,6 +139,10 @@ write_files:
 
       exec &> >(while IFS=$'\r' read -ra line; do [ -z "${line[@]}" ] && line=( '' ); TS=$(</proc/uptime); echo -e "[${TS% *}] ${line[-1]}" | tee -a /cidata_log > /dev/tty1; done)
       
+      # import cloud-init logs
+      tee -a /cidata_log <<<":: import cloud-init logs up to this point in time" >/dev/null
+      sed -e '/DEBUG/d' /var/log/cloud-init.log | tee -a /cidata_log >/dev/null
+      
       # wait online
       echo ":: wait for any interface to be online"
       /usr/lib/systemd/systemd-networkd-wait-online --operational-state=routable --any
