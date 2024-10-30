@@ -21,8 +21,8 @@ users:
       - expire: false
 
 growpart:
-  mode: off
-resize_rootfs: off
+  mode: 'off'
+resize_rootfs: 'off'
 
 locale: de_DE
 
