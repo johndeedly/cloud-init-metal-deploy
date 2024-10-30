@@ -32,12 +32,15 @@ find /var/cache/apt/mirror -name '*.deb' -printf "%P %T+\n" | sort -r -t' ' -k2,
   echo "removing /var/cache/apt/mirror/$pkg"
   rm "/var/cache/apt/mirror/$pkg"
 done
-tee /tmp/mirror_url_list.txt <<EOX
-http://archive.ubuntu.com/ubuntu/dists/noble/
-http://archive.ubuntu.com/ubuntu/dists/noble-updates/
-http://archive.ubuntu.com/ubuntu/dists/noble-backports/
-http://archive.ubuntu.com/ubuntu/dists/noble-security/
+(
+  source /etc/os-release
+  tee /tmp/mirror_url_list.txt <<EOX
+http://archive.ubuntu.com/ubuntu/dists/${VERSION_CODENAME}/
+http://archive.ubuntu.com/ubuntu/dists/${VERSION_CODENAME}-updates/
+http://archive.ubuntu.com/ubuntu/dists/${VERSION_CODENAME}-backports/
+http://archive.ubuntu.com/ubuntu/dists/${VERSION_CODENAME}-security/
 EOX
+)
 # force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
 # ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
@@ -69,12 +72,15 @@ find /var/cache/apt/mirror -name '*.deb' -printf "%P %T+\n" | sort -r -t' ' -k2,
   echo "removing /var/cache/apt/mirror/$pkg"
   rm "/var/cache/apt/mirror/$pkg"
 done
-tee /tmp/mirror_url_list.txt <<EOX
-https://deb.debian.org/debian/dists/bookworm/
-https://deb.debian.org/debian/dists/bookworm-updates/
-https://deb.debian.org/debian/dists/bookworm-backports/
-https://deb.debian.org/debian-security/dists/bookworm-security/
+(
+  source /etc/os-release
+  tee /tmp/mirror_url_list.txt <<EOX
+https://deb.debian.org/debian/dists/${VERSION_CODENAME}/
+https://deb.debian.org/debian/dists/${VERSION_CODENAME}-updates/
+https://deb.debian.org/debian/dists/${VERSION_CODENAME}-backports/
+https://deb.debian.org/debian-security/dists/${VERSION_CODENAME}-security/
 EOX
+)
 # force paths on downloaded files, skip domain part in path, continue unfinished downloads and skip already downloaded ones, use timestamps,
 # recursively traverse the page, stay below the given folder structure, exclude auto-generated index pages, exclude paths and files from other architectures,
 # ignore robots.txt, download to target path, load download list from file, show progress in larger size steps per dot
