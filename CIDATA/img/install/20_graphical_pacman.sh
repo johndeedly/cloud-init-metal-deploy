@@ -402,6 +402,8 @@ Section "Device"
   Option     "SWcursor" "on"
 EndSection
 EOX
+  systemctl --user set-environment KWIN_FORCE_SW_CURSOR=1 WLR_NO_HARDWARE_CURSORS=1 MUTTER_DEBUG_DISABLE_HW_CURSORS=1
+  dbus-update-activation-environment --systemd --all KWIN_FORCE_SW_CURSOR=1 WLR_NO_HARDWARE_CURSORS=1 MUTTER_DEBUG_DISABLE_HW_CURSORS=1
 else
   if [ -f /etc/X11/xorg.conf.d/05-swcursor.conf ]; then
     rm /etc/X11/xorg.conf.d/05-swcursor.conf
