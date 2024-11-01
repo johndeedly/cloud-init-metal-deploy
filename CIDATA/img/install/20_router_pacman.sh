@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd
+LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd nfs-utils
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=user,option:dns-server,172.26.0.1\n"
@@ -333,8 +333,35 @@ ExecStart=/usr/local/bin/hosts-calc
 WantedBy=multi-user.target
 EOF
 
+# configure nfs
+# https://www.baeldung.com/linux/firewalld-nfs-connections-settings
+mkdir -p /srv/pxe/arch/x86_64
+sed -i '0,/^\[mountd\].*/s//[mountd]\nport=20048/' /etc/nfs.conf
+sed -i '0,/^\[lockd\].*/s//[lockd]\nport=32767\nudp-port=32767/' /etc/nfs.conf
+sed -i '0,/^\[statd\].*/s//[statd]\nport=32765/' /etc/nfs.conf
+sed -i '0,/^\[nfsd\].*/s//[nfsd]\nthreads=16/' /etc/nfs.conf
+
+tee /etc/exports <<EOF
+/srv        127.0.0.0/8(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        172.24.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        172.26.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        172.28.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        ::1/128(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        fdb8:075f:c8ee:fb66::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv        fd97:6274:3c67:7974::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
+/srv/pxe    127.0.0.0/8(ro,no_root_squash,no_subtree_check)
+/srv/pxe    172.24.0.0/15(ro,no_root_squash,no_subtree_check)
+/srv/pxe    172.26.0.0/15(ro,no_root_squash,no_subtree_check)
+/srv/pxe    172.28.0.0/15(ro,no_root_squash,no_subtree_check)
+/srv/pxe    ::1/128(ro,no_root_squash,no_subtree_check)
+/srv/pxe    fdb8:075f:c8ee:fb66::/64(ro,no_root_squash,no_subtree_check)
+/srv/pxe    fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check)
+/srv/pxe    fd97:6274:3c67:7974::/64(ro,no_root_squash,no_subtree_check)
+EOF
+
 # Enable all configured services
-systemctl enable dnsmasq ntpd.timer step-ca hosts-calc
+systemctl enable dnsmasq ntpd.timer step-ca hosts-calc nfs-server rpc-statd
 
 # configure the firewall
 firewall-offline-cmd --zone=public --add-service=dhcp
@@ -345,6 +372,13 @@ firewall-offline-cmd --zone=public --add-service=ntp
 firewall-offline-cmd --zone=public --add-service=tftp
 firewall-offline-cmd --zone=public --add-service=http
 firewall-offline-cmd --zone=public --add-port=8443/tcp
+firewall-offline-cmd --zone=public --add-service=nfs
+firewall-offline-cmd --zone=public --add-service=rpc-bind
+firewall-offline-cmd --zone=public --add-service=mountd
+firewall-offline-cmd --zone=public --add-port=32767/tcp
+firewall-offline-cmd --zone=public --add-port=32767/udp
+firewall-offline-cmd --zone=public --add-port=32765/tcp
+firewall-offline-cmd --zone=public --add-port=32765/udp
 
 # disable network config in cloud init
 tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
