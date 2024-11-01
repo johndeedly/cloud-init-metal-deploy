@@ -889,8 +889,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install \
           luajit libluajit-5.1-dev lua-mpack lua-lpeg libunibilium-dev libmsgpack-dev libtermkey-dev
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld
-        systemctl disable nslcd
+        systemctl enable systemd-networkd systemd-resolved systemd-homed ssh firewalld nslcd
         systemctl disable NetworkManager NetworkManager-wait-online NetworkManager-dispatcher || true
         systemctl mask NetworkManager NetworkManager-wait-online NetworkManager-dispatcher
       elif [ -e /bin/pacman ]; then
@@ -902,8 +901,7 @@ write_files:
           openssh wireguard-tools nfs-utils \
           gvfs gvfs-smb cifs-utils unzip p7zip rsync xdg-user-dirs xdg-utils \
           openldap nss-pam-ldapd
-        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld
-        systemctl disable nslcd
+        systemctl enable systemd-networkd systemd-resolved systemd-homed sshd firewalld nslcd
         systemctl disable NetworkManager NetworkManager-wait-online NetworkManager-dispatcher || true
         systemctl mask NetworkManager NetworkManager-wait-online NetworkManager-dispatcher
       elif [ -e /bin/yum ]; then
@@ -920,8 +918,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C yum install -y \
           compat-lua-libs libtermkey libtree-sitter libvterm luajit luajit2.1-luv msgpack unibilium xsel
         download_neovim
-        systemctl enable systemd-networkd systemd-resolved sshd firewalld
-        systemctl disable nslcd
+        systemctl enable systemd-networkd systemd-resolved sshd firewalld nslcd
         systemctl disable NetworkManager NetworkManager-wait-online NetworkManager-dispatcher || true
         systemctl mask NetworkManager NetworkManager-wait-online NetworkManager-dispatcher
       fi
@@ -984,7 +981,7 @@ write_files:
       fi
       if [ -f /etc/nslcd.conf ]; then
         chmod 0600 /etc/nslcd.conf
-        sed -i 's/^#\?uri/#uri/' /etc/nslcd.conf
+        sed -i 's|^uri |uri ldap://0.0.0.0/|' /etc/nslcd.conf
       fi
       if [ -f /etc/nsswitch.conf ]; then
           sed -i 's/^\(passwd.*\)/\1 ldap/' /etc/nsswitch.conf
