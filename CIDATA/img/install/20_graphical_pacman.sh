@@ -388,6 +388,43 @@ WantedBy=timers.target
 EOF
 systemctl --global enable wallpaper.timer
 
+# software cursor when running inside a vm
+tee /usr/local/bin/vm-check.sh <<'EOF'
+#!/usr/bin/env bash
+
+if systemd-detect-virt -q; then
+  if ! [ -d /etc/X11/xorg.conf.d ]; then
+    mkdir -p /etc/X11/xorg.conf.d
+  fi
+  tee /etc/X11/xorg.conf.d/05-swcursor.conf <<EOX
+Section "Device"
+  Identifier "graphicsdriver"
+  Option     "SWcursor" "on"
+EndSection
+EOX
+else
+  if [ -f /etc/X11/xorg.conf.d/05-swcursor.conf ]; then
+    rm /etc/X11/xorg.conf.d/05-swcursor.conf
+  fi
+fi
+EOF
+chmod +x /usr/local/bin/vm-check.sh
+tee /etc/systemd/system/vm-check.service <<EOF
+[Unit]
+Description=Check for virtual environment and enable software cursor
+
+[Service]
+Type=simple
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/local/bin/vm-check.sh
+
+[Install]
+WantedBy=sysinit.target
+EOF
+systemctl enable vm-check
+
 # global xterm fallback to kitty terminal
 ln -s /usr/bin/kitty /usr/local/bin/xterm
 
