@@ -4,6 +4,7 @@ run_earlyhook() {
     if [ -n "${ip}" ] && [ -n "${pxe_nfs_srv}" ]; then
         # Module autoloading
         modprobe nfs 2>/dev/null
+        modprobe sunrpc 2>/dev/null
     fi
 }
 
@@ -23,16 +24,33 @@ pxe_nfs_mount_handler() {
 
     # mount the nfs directly as boot mount
     msg ":: Mount NFS share '${pxe_nfs_srv}'"
-    local mount_status
-    if [ -n "${pxe_nfs_opt}" ]; then
-        mkdir -p "${boot_mnt}"
-        nfsmount -o "${pxe_nfs_opt}" "${pxe_nfs_srv}" "${boot_mnt}"
-        mount_status=$?
-    else
-        mkdir -p "${boot_mnt}"
-        nfsmount "${pxe_nfs_srv}" "${boot_mnt}"
-        mount_status=$?
-    fi
+    mkdir -p "${boot_mnt}"
+    local mount_status=1
+    rpcinfo -p "${pxeserver}" | grep nfs | sort -n -r | while read -r pid ver proto port srv; do
+        if [ "nfs" = "$srv" ] && [ "2049" = "$port" ] && [ "tcp" = "$proto" ]; then
+            if [ "4" = "$ver" ]; then
+                msg ":: trying nfs 4"
+                if [ -n "${pxe_nfs_opt}" ]; then
+                    timeout 15 mount.nfs4 -o "${pxe_nfs_opt}" "${pxe_nfs_srv}" "${boot_mnt}"
+                else
+                    timeout 15 mount.nfs4 "${pxe_nfs_srv}" "${boot_mnt}"
+                fi
+                mount_status=$?
+                [ "$mount_status" -gt 0 ] && continue
+                break
+            elif [ "3" = "$ver" ]; then
+                msg ":: trying nfs 3"
+                if [ -n "${pxe_nfs_opt}" ]; then
+                    timeout 15 nfsmount -o "${pxe_nfs_opt}" "${pxe_nfs_srv}" "${boot_mnt}"
+                else
+                    timeout 15 nfsmount "${pxe_nfs_srv}" "${boot_mnt}"
+                fi
+                mount_status=$?
+                [ "$mount_status" -gt 0 ] && continue
+                break
+            fi
+        fi
+    done
     if [ "$mount_status" -gt 0 ]; then
         echo "!! ERROR: failed to mount '${pxe_nfs_srv}'"
         launch_interactive_shell

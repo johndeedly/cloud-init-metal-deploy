@@ -116,8 +116,8 @@ pxe_mount_handler() {
         else
             (cp -- "${boot_img}" "${copytoram_img}")
             local rc=$?
-            msg ":: Copy to '${boot_img}' finished"
         fi
+        msg ":: Copy to '${boot_img}' finished"
 
         if [ "$rc" != 0 ]; then
             echo "!! ERROR: copy '${boot_img}' to '${copytoram_img}'"
