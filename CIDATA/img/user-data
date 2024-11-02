@@ -807,6 +807,7 @@ write_files:
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive apt -y full-upgrade
         LC_ALL=C yes | LC_ALL=C DEBIAN_FRONTEND=noninteractive eatmydata apt -y install systemd-container
       elif [ -e /bin/pacman ]; then
+        LC_ALL=C yes | LC_ALL=C pacman -S --needed --noconfirm yq
         # main repo key from website
         LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 3056513887B78AEB --keyserver hkp://keys.gnupg.net
         LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 3056513887B78AEB
