@@ -189,15 +189,19 @@ write_files:
       # Force update of all existing keys in the pacman keyring
       # adapted from 'archlinux-keyring-wkd-sync' (less verbose)
       readonly homedir="$(pacman-conf GPGDir)"
-      gpg_locate_external=(
-        # force update a key using WKD
-        gpg
+      gpg_edit=(
+        /usr/bin/env
+        LC_ALL=C
+        /usr/bin/gpg
         --homedir
         "$homedir"
-        --keyserver
-        hkp://keys.gnupg.net
         --no-permission-warning
-        --refresh-keys
+        --no-tty
+        --command-fd
+        0
+        --status-fd
+        3
+        --edit-key
       )
       fingerprint_mboxes="$(
         gpg --homedir "$homedir" --no-permission-warning --list-keys --list-options show-only-fpr-mbox | uniq
@@ -206,14 +210,19 @@ write_files:
         gpg --homedir "$homedir" --no-permission-warning --list-keys --with-colons | \
           awk -F: '$1 == "pub" && $2 ~ /-|q|r/ { getline; print $10 }'
       )"
-      echo ":: refreshing archlinux keychain"
+      echo ":: modify archlinux keychain only for old package versions and only in this installation step to ultimate trust"
       for domain_match in '@master-key.archlinux.org$' '@archlinux.org$'; do
         while read -ra fpr_email; do
           if [[ ${fpr_email[1]} =~ $domain_match && ! "$old_fingerprints" =~ ${fpr_email[0]} ]]; then
-            echo "${fpr_email[0]}"
+            echo ":: key ${fpr_email[0]} set to ultimate trust"
+            "${gpg_edit[@]}" "${fpr_email[0]}" 3>/dev/null <<EOF
+      trust
+      5
+      quit
+      EOF
           fi
         done <<< "$fingerprint_mboxes"
-      done | xargs "${gpg_locate_external[@]}"
+      done
 
       sed -i 's/^#\?ParallelDownloads.*/ParallelDownloads = 5/' /etc/pacman.conf
       LC_ALL=C yes | LC_ALL=C pacman -Sy --noconfirm libguestfs qemu-base arch-install-scripts yq
