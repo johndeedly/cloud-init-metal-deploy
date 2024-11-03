@@ -148,13 +148,16 @@ sed -i '0,/^#\?dhcp-option-force=209.*/s//'"${DHCP_209_SETUP[*]}"'/' /etc/dnsmas
 sed -i '0,/^#\?dhcp-option-force=210.*/s//'"${DHCP_210_SETUP[*]}"'/' /etc/dnsmasq.conf
 
 # configure tftp
-mkdir -p /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg
+mkdir -p /srv/tftp/{,bios,efi32,efi64}/pxelinux.cfg
 rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/bios/ /srv/tftp/bios/
 rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi32/ /srv/tftp/efi32/
 rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi64/ /srv/tftp/efi64/
-tee /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg/default <<EOF
+tee /srv/tftp/pxelinux.cfg/default <<EOF
 $(</cidata/install/pxe/pxelinux.cfg.default)
 EOF
+ln -s /srv/tftp/pxelinux.cfg/default /srv/tftp/bios/pxelinux.cfg/default
+ln -s /srv/tftp/pxelinux.cfg/default /srv/tftp/efi32/pxelinux.cfg/default
+ln -s /srv/tftp/pxelinux.cfg/default /srv/tftp/efi64/pxelinux.cfg/default
 
 # configure http
 mkdir -p /srv/http/arch/x86_64
@@ -320,7 +323,9 @@ firewall-offline-cmd --zone=public --add-port=32765/udp
 
 # disable network config in cloud init
 tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
-network: {config: disabled}
+network:
+  config: disabled
+disable_network_activation: true
 EOF
 find /etc/systemd/network -name "05-wired.network" -print -delete
 find /etc/systemd/network -name "10-cloud-init*.network" -print -delete

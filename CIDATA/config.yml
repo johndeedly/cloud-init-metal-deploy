@@ -60,7 +60,6 @@ files:
       - install/pxe
       - install/pxe/pxe.conf
       - install/pxe/pxe.preset
-      - install/pxe/pxelinux.cfg.default
       - install/pxe/hooks
       - install/pxe/hooks/pxe
       - install/pxe/hooks/pxe_cifs
