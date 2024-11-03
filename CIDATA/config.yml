@@ -53,6 +53,8 @@ files:
     minecraft:
       - install/20_minecraft_pacman.sh
     router:
+      - install/pxe
+      - install/pxe/pxelinux.cfg.default
       - install/20_router_pacman.sh
     pxe:
       - install/pxe

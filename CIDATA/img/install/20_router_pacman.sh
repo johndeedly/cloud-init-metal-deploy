@@ -3,23 +3,17 @@
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd nfs-utils
 
 DHCP_ADDITIONAL_SETUP=(
-  "dhcp-option=user,option:dns-server,172.26.0.1\n"
-  "dhcp-option=user,option6:dns-server,[fdd5:a799:9326:171d::1]\n"
-  "dhcp-option=user,option:ntp-server,172.26.0.1\n"
-  "dhcp-option=user,option6:ntp-server,[fdd5:a799:9326:171d::1]\n"
-  "dhcp-option=guest,option:dns-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:dns-server,[fd97:6274:3c67:7974::1]\n"
-  "dhcp-option=guest,option:ntp-server,172.28.0.1\n"
-  "dhcp-option=guest,option6:ntp-server,[fd97:6274:3c67:7974::1]\n"
+  "dhcp-option=option:dns-server,172.26.0.1\n"
+  "dhcp-option=option6:dns-server,[fdd5:a799:9326:171d::1]\n"
+  "dhcp-option=option:ntp-server,172.26.0.1\n"
+  "dhcp-option=option6:ntp-server,[fdd5:a799:9326:171d::1]\n"
   "\n"
   "# Override the default route supplied by dnsmasq, which assumes the"
 )
 
 DHCP_RANGES=(
-  "dhcp-range=user,172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
-  "dhcp-range=guest,172.29.0.1,172.29.255.254,255.254.0.0,12h\n"
-  "dhcp-range=user,::1,::ffff,constructor:user,ra-names,64,12h\n"
-  "dhcp-range=guest,::1,::ffff,constructor:guest,ra-names,64,12h"
+  "dhcp-range=172.27.0.1,172.27.255.254,255.254.0.0,12h\n"
+  "dhcp-range=::1,::ffff,constructor:lan0,ra-names,64,12h\n"
 )
 
 PXESETUP=(
@@ -54,15 +48,27 @@ OriginalName=*
 NamePolicy=keep
 EOF
 
-# eth0 is bridged to macvlan devices wan0 and lan0
+# eth0 is bridged to macvlan device wan0
 tee /etc/systemd/network/15-eth0.network <<EOF
 [Match]
 Name=eth0
 
 [Network]
 MACVLAN=wan0
+LinkLocalAddressing=no
+LLDP=no
+EmitLLDP=no
+IPv6AcceptRA=no
+IPv6SendRA=no
+EOF
+
+# eth1 is bridged to macvlan device lan0
+tee /etc/systemd/network/15-eth1.network <<EOF
+[Match]
+Name=eth1
+
+[Network]
 MACVLAN=lan0
-MACVLAN=mgmt0
 LinkLocalAddressing=no
 LLDP=no
 EmitLLDP=no
@@ -71,7 +77,7 @@ IPv6SendRA=no
 EOF
 
 # define virtual devices
-tee /etc/systemd/network/15-wan0-bridge.netdev <<EOF
+tee /etc/systemd/network/20-wan0-bridge.netdev <<EOF
 [NetDev]
 Name=wan0
 Kind=macvlan
@@ -79,7 +85,7 @@ Kind=macvlan
 [MACVLAN]
 Mode=private
 EOF
-tee /etc/systemd/network/15-lan0-bridge.netdev <<EOF
+tee /etc/systemd/network/20-lan0-bridge.netdev <<EOF
 [NetDev]
 Name=lan0
 Kind=macvlan
@@ -87,33 +93,9 @@ Kind=macvlan
 [MACVLAN]
 Mode=private
 EOF
-tee /etc/systemd/network/15-mgmt0-bridge.netdev <<EOF
-[NetDev]
-Name=mgmt0
-Kind=macvlan
 
-[MACVLAN]
-Mode=private
-EOF
-tee /etc/systemd/network/15-lan0-vlan-user.netdev <<EOF
-[NetDev]
-Name=user
-Kind=vlan
-
-[VLAN]
-Id=16
-EOF
-tee /etc/systemd/network/15-lan0-vlan-guest.netdev <<EOF
-[NetDev]
-Name=guest
-Kind=vlan
-
-[VLAN]
-Id=32
-EOF
-
-# configure wan0, lan0, mgmt0 and vlans local and guest
-tee /etc/systemd/network/20-wan0.network <<EOF
+# configure wan0 and lan0
+tee /etc/systemd/network/25-wan0.network <<EOF
 [Match]
 Name=wan0
 
@@ -138,45 +120,13 @@ RouteMetric=10
 [IPv6Prefix]
 RouteMetric=10
 EOF
-tee /etc/systemd/network/20-lan0.network <<EOF
+tee /etc/systemd/network/25-lan0.network <<EOF
 [Match]
 Name=lan0
 
 [Network]
-VLAN=user
-VLAN=guest
-LinkLocalAddressing=no
-LLDP=no
-EmitLLDP=no
-IPv6AcceptRA=no
-IPv6SendRA=no
-EOF
-tee /etc/systemd/network/20-mgmt0.network <<EOF
-[Match]
-Name=mgmt0
-
-[Network]
-Address=172.24.0.1/24
-Address=fdb8:075f:c8ee:fb66::1/64
-
-[Address]
-AddPrefixRoute=no
-EOF
-tee /etc/systemd/network/20-lan0-vlan-user.network <<EOF
-[Match]
-Name=user
-
-[Network]
 Address=172.26.0.1/15
 Address=fdd5:a799:9326:171d::1/64
-EOF
-tee /etc/systemd/network/20-lan0-vlan-guest.network <<EOF
-[Match]
-Name=guest
-
-[Network]
-Address=172.28.0.1/15
-Address=fd97:6274:3c67:7974::1/64
 EOF
 
 # configure dnsmasq
@@ -203,11 +153,7 @@ rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/
 rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi32/ /srv/tftp/efi32/
 rsync -av --chown=root:root --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r /usr/lib/syslinux/efi64/ /srv/tftp/efi64/
 tee /srv/tftp/{bios,efi32,efi64}/pxelinux.cfg/default <<EOF
-LABEL archlinux
-    MENU LABEL Arch Linux x86_64
-    LINUX http://IPADDR/arch/x86_64/vmlinuz-linux
-    INITRD http://IPADDR/arch/x86_64/initramfs-linux-pxe.img
-    SYSAPPEND 3
+$(</cidata/install/pxe/pxelinux.cfg.default)
 EOF
 
 # configure http
@@ -343,21 +289,13 @@ sed -i '0,/^\[nfsd\].*/s//[nfsd]\nthreads=16/' /etc/nfs.conf
 
 tee /etc/exports <<EOF
 /srv        127.0.0.0/8(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        172.24.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
 /srv        172.26.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        172.28.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
 /srv        ::1/128(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        fdb8:075f:c8ee:fb66::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
 /srv        fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        fd97:6274:3c67:7974::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
 /srv/pxe    127.0.0.0/8(ro,no_root_squash,no_subtree_check)
-/srv/pxe    172.24.0.0/15(ro,no_root_squash,no_subtree_check)
 /srv/pxe    172.26.0.0/15(ro,no_root_squash,no_subtree_check)
-/srv/pxe    172.28.0.0/15(ro,no_root_squash,no_subtree_check)
 /srv/pxe    ::1/128(ro,no_root_squash,no_subtree_check)
-/srv/pxe    fdb8:075f:c8ee:fb66::/64(ro,no_root_squash,no_subtree_check)
 /srv/pxe    fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check)
-/srv/pxe    fd97:6274:3c67:7974::/64(ro,no_root_squash,no_subtree_check)
 EOF
 
 # Enable all configured services
@@ -384,4 +322,5 @@ firewall-offline-cmd --zone=public --add-port=32765/udp
 tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
 network: {config: disabled}
 EOF
+find /etc/systemd/network -name "05-wired.network" -print -delete
 find /etc/systemd/network -name "10-cloud-init*.network" -print -delete
