@@ -7,6 +7,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   archlinux-wallpaper elementary-wallpapers elementary-icon-theme ttf-dejavu ttf-dejavu-nerd ttf-liberation ttf-font-awesome ttf-hanazono \
   ttf-hannom ttf-baekmuk noto-fonts-emoji ttf-ms-fonts \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
+  bluez blueman \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
   pamac flatpak gnome-keyring librewolf betterbird virt-manager \
   cinnamon cinnamon-translations system-config-printer
