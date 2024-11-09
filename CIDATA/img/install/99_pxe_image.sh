@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 
+# disable systemd-network-generator in pxe image
+systemctl mask systemd-network-generator
+
 # create a squashfs snapshot based on rootfs
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed squashfs-tools
 mkdir -p /share/pxe/arch/x86_64
 sync
 mksquashfs / /share/pxe/arch/x86_64/pxeboot.img -comp zstd -Xcompression-level 4 -b 1M -progress -wildcards \
   -e "boot/*" "cidata*" "dev/*" "etc/fstab" "etc/crypttab" "etc/crypttab.initramfs" "proc/*" "sys/*" "run/*" "mnt/*" "share/*" "media/*" "tmp/*" "var/tmp/*" "var/log/*" "var/cache/pacman/pkg/*"
+
+# reenable systemd-network-generator
+systemctl unmask systemd-network-generator
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed mkinitcpio-nfs-utils curl ca-certificates-utils cifs-utils nfs-utils nbd open-iscsi nvme-cli
 
