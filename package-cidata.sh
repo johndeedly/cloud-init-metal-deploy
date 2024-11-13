@@ -23,10 +23,10 @@ if ! [ -d CIDATA/img ]; then
 fi
 
 if ! [ -f "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2" ]; then
-    CLOUDHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256")
+    CLOUDHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256")
 
     log_text "Arch-Linux-x86_64-cloudimg.qcow2"
-    if ! wget -O "Arch-Linux-x86_64-cloudimg.qcow2" "https://geo.mirror.pkgbuild.com/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"; then
+    if ! wget -c -N --progress=dot:mega "https://geo.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"; then
         log_error "Download error"
         exit 1
     fi

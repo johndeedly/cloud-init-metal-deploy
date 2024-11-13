@@ -19,11 +19,10 @@ function log_error() {
 }
 
 if ! [ -f "archlinux-x86_64.iso" ]; then
-    ARCHISODATE=$(curl -sL "https://archlinux.org/download/" | grep -oE 'magnet:.*?dn=archlinux-.*?-x86_64.iso' | cut -d- -f2)
-    ARCHISOHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/archlinux/iso/${ARCHISODATE}/sha256sums.txt" | grep -oE "^.*?archlinux-x86_64.iso$")
+    ARCHISOHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/iso/latest/sha256sums.txt" | grep -oE "^.*?archlinux-x86_64.iso$")
 
     log_text "Downloading archlinux-x86_64.iso"
-    if ! wget -O "archlinux-x86_64.iso" "https://geo.mirror.pkgbuild.com/archlinux/iso/${ARCHISODATE}/archlinux-x86_64.iso"; then
+    if ! wget -c -N --progress=dot:mega "https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso"; then
         log_error "Download error"
         exit 1
     fi
@@ -41,44 +40,16 @@ if ! [ -d CIDATA/img ]; then
     mkdir -p CIDATA/img
 fi
 
-if ! [ -f "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2" ]; then
-    CLOUDHASH=$(curl -sL "https://geo.mirror.pkgbuild.com/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2.SHA256")
-
-    log_text "Arch-Linux-x86_64-cloudimg.qcow2"
-    if ! wget -O "Arch-Linux-x86_64-cloudimg.qcow2" "https://geo.mirror.pkgbuild.com/archlinux/images/latest/Arch-Linux-x86_64-cloudimg.qcow2"; then
-        log_error "Download error"
-        exit 1
-    fi
-
-    sync
-    
-    log_text "Validate checksum of Arch-Linux-x86_64-cloudimg.qcow2"
-    if ! echo "${CLOUDHASH}" | sha256sum --check --status; then
-        log_error "Checksum mismatch"
-        exit 1
-    fi
-
-    mv "Arch-Linux-x86_64-cloudimg.qcow2" "CIDATA/img/Arch-Linux-x86_64-cloudimg.qcow2"
-fi
-
 if ! [ -f CIDATA/meta-data ]; then
     log_error "no cidata present, aborting"
     exit 1
 fi
 
 CLOUDINITISO="cloud-init.iso"
-ARCHISOMODDED="archlinux-x86_64-with-cidata.iso"
-[ -f "${CLOUDINITISO}" ] && rm "${CLOUDINITISO}"
-[ -f "${ARCHISOMODDED}" ] && rm "${ARCHISOMODDED}"
+source package-cidata.sh
 
-log_text "Create INSTALL image to append it to the archiso image"
-xorriso -volid "CIDATA" \
-        -outdev "${CLOUDINITISO}" \
-        -map CIDATA/meta-data /meta-data \
-        -map CIDATA/user-data /user-data \
-        -map CIDATA/vendor-data /vendor-data \
-        -map CIDATA/network-config /network-config \
-        -map CIDATA/img/ /img/
+ARCHISOMODDED="archlinux-x86_64-with-cidata.iso"
+[ -f "${ARCHISOMODDED}" ] && rm "${ARCHISOMODDED}"
 
 log_text "Create the modified archiso image"
 xorriso -indev "archlinux-x86_64.iso" \
