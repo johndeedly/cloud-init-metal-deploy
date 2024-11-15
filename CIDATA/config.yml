@@ -46,6 +46,8 @@ files:
       - per-boot/30_proxmox_step2.sh
       - per-boot/40_proxmox_step1.sh
   pacman:
+    docker:
+      - install/20_docker_pacman.sh
     graphical:
       - install/20_graphical_pacman.sh
     mirror:
