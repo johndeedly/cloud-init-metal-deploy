@@ -814,7 +814,7 @@ write_files:
         # garuda build key (remove when problems are fixed by the chaotic-aur team)
         LC_ALL=C yes | LC_ALL=C pacman-key --recv-key 349BC7808577C592 --keyserver hkp://keys.gnupg.net
         LC_ALL=C yes | LC_ALL=C pacman-key --lsign-key 349BC7808577C592
-        PKG_MIRROR=$(yq -r '.setup.pkg_mirror' /cidata/config.yml)
+        PKG_MIRROR=$(yq -r '.setup.chaotic_mirror' /cidata/config.yml)
         if [ -n "$PKG_MIRROR" ] && [ "false" != "$PKG_MIRROR" ]; then
           tee -a /etc/pacman.conf <<EOF
       [chaotic-aur]
