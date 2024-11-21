@@ -10,6 +10,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   bluez blueman \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
   pamac flatpak gnome-keyring librewolf betterbird virt-manager \
+  ghostscript gsfonts foomatic-db-engine foomatic-db foomatic-db-nonfree foomatic-db-ppds foomatic-db-nonfree-ppds gutenprint foomatic-db-gutenprint-ppds hplip \
   cinnamon cinnamon-translations system-config-printer
 
 # enable some services
