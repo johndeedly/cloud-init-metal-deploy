@@ -823,7 +823,7 @@ write_files:
         else
           tee -a /etc/pacman.conf <<'EOF'
       [chaotic-aur]
-      Server = https://geo-mirror.chaotic.cx/$repo/$arch
+      Server = https://cf-builds.garudalinux.org/repos/$repo/$arch
       EOF
         fi
         LC_ALL=C yes | LC_ALL=C pacman -Syu --noconfirm chaotic-keyring
