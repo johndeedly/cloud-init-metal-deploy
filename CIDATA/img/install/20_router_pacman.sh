@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd nfs-utils \
-  samba open-iscsi targetcli-fb python-rtslib-fb python-configshell-fb
+  samba nbd open-iscsi targetcli-fb python-rtslib-fb python-configshell-fb
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=option:dns-server,172.26.0.1\n"
@@ -505,9 +505,24 @@ guest ok = yes
 public = yes
 EOF
 
+# configure nbd
+tee /etc/nbd-server/config <<EOF
+[generic]
+[pxe]
+  readonly = true
+  exportname = /srv/pxe/arch/x86_64/pxeboot.img
+  authfile = /etc/nbd-server/allow
+EOF
+tee /etc/nbd-server/allow <<EOF
+127.0.0.0/8
+172.26.0.0/15
+::1/128
+fdd5:a799:9326:171d::/64
+EOF
+
 # Enable all configured services
 systemctl enable dnsmasq ntpd.timer step-ca hosts-calc nfsv4-server rpc-statd \
-  target update-arch-target smb
+  target update-arch-target smb nbd
 
 # configure the firewall
 firewall-offline-cmd --zone=public --add-service=dhcp
@@ -527,6 +542,7 @@ firewall-offline-cmd --zone=public --add-port=32765/tcp
 firewall-offline-cmd --zone=public --add-port=32765/udp
 firewall-offline-cmd --zone=public --add-service=iscsi-target
 firewall-offline-cmd --zone=public --add-service=samba
+firewall-offline-cmd --zone=public --add-port=10809/tcp
 
 # disable network config in cloud init
 tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
