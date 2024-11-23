@@ -2,9 +2,6 @@
 
 run_hook() {
     if [ -n "${ip}" ] && [ -n "${pxe_iscsi_srv}" ]; then
-        # copy to RAM logic is disabled, as iscsistart does not support session shutdown
-        export copytoram="n"
-
         pxe_iscsi_srv=$(eval echo "${pxe_iscsi_srv}")
 
         # enable chained iscsi mount handler
@@ -21,7 +18,14 @@ pxe_iscsi_mount_handler() {
 
     # 1st: setup the iscsi filesystem
     msg ":: Setup iSCSI with '${pxe_iscsi_srv}', target '${pxe_iscsi_tgt}'"
-    iscsistart -i "${pxe_iscsi_cli}" -t "${pxe_iscsi_tgt}" -g 1 -a "${pxe_iscsi_srv}" -d 2
+    mkdir -p /etc/iscsi /var/lib/iscsi /run/lock/iscsi
+    iscsiuio
+    tee /etc/iscsi/initiatorname.iscsi <<EOF
+InitiatorName=${pxe_iscsi_cli}
+EOF
+    iscsid
+    iscsiadm -m discovery -t sendtargets -p "${pxe_iscsi_srv}"
+    iscsiadm -m node -T "${pxe_iscsi_tgt}" -p "${pxe_iscsi_srv}" -l
     
     # 2nd: check the copy to RAM filesystem is present
     if ! mountpoint -q "${copytoram_mnt}"; then
@@ -53,4 +57,14 @@ pxe_iscsi_mount_handler() {
     fi
 
     pxe_mount_handler "${newroot}"
+
+    # last: when the image is copied to RAM, the iSCSI connection needs to be
+    #       closed as the boot process will hang (#bug)
+    if [ "${copytoram}" = "y" ]; then
+        msg ":: Disconnect iSCSI from '${pxe_iscsi_srv}', target '${pxe_iscsi_tgt}'"
+        iscsiadm -m node -T "${pxe_iscsi_tgt}" -p "${pxe_iscsi_srv}" -u
+        iscsiadm -m node -o delete -T "${pxe_iscsi_tgt}"
+        killall iscsid
+        killall iscsiuio
+    fi
 }

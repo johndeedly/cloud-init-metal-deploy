@@ -56,8 +56,29 @@ files:
       - install/20_minecraft_pacman.sh
     router:
       - install/pxe
+      - install/pxe/pxe.conf
+      - install/pxe/pxe.preset
       - install/pxe/pxelinux.cfg.default
+      - install/pxe/hooks
+      - install/pxe/hooks/pxe
+      - install/pxe/hooks/pxe_cifs
+      - install/pxe/hooks/pxe_http
+      - install/pxe/hooks/pxe_iscsi
+      - install/pxe/hooks/pxe_nbd
+      - install/pxe/hooks/pxe_nfs
+      - install/pxe/hooks/pxe_nvmeof
+      - install/pxe/hooks/pxe_wg
+      - install/pxe/install
+      - install/pxe/install/pxe
+      - install/pxe/install/pxe_cifs
+      - install/pxe/install/pxe_http
+      - install/pxe/install/pxe_iscsi
+      - install/pxe/install/pxe_nbd
+      - install/pxe/install/pxe_nfs
+      - install/pxe/install/pxe_nvmeof
+      - install/pxe/install/pxe_wg
       - install/20_router_pacman.sh
+      - install/99_pxe_image.sh
     pxe:
       - install/pxe
       - install/pxe/pxe.conf

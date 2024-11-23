@@ -5,7 +5,12 @@ build() {
     
     add_runscript
 
-    add_binary iscsistart
+    add_binary iscsiadm
+    add_binary iscsid
+    add_binary iscsiuio
+
+    add_file /etc/iscsi/iscsid.conf
+    add_file /etc/udev/rules.d/50-iscsi.rules
 }
 
 help() {

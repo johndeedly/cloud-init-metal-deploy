@@ -66,6 +66,13 @@ INITRD http://ipaddr/arch/x86_64/initramfs-linux-pxe.img
 APPEND pxe_iscsi_srv=${pxeserver} copytoram=n cow_spacesize=75%
 SYSAPPEND 3
 
+LABEL ArchiSCSICopy
+MENU LABEL Boot Arch Linux using iSCSI (Copy to RAM)
+LINUX http://ipaddr/arch/x86_64/vmlinuz-linux
+INITRD http://ipaddr/arch/x86_64/initramfs-linux-pxe.img
+APPEND pxe_iscsi_srv=${pxeserver} copytoram=y cow_spacesize=75%
+SYSAPPEND 3
+
 LABEL ArchNVMeoF
 MENU LABEL Boot Arch Linux using NVMeoF
 LINUX http://ipaddr/arch/x86_64/vmlinuz-linux
