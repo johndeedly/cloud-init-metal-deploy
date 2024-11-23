@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed net-tools syslinux dnsmasq iptraf-ng ntp step-ca step-cli darkhttpd nfs-utils \
-  open-iscsi targetcli-fb python-rtslib-fb python-configshell-fb
+  samba open-iscsi targetcli-fb python-rtslib-fb python-configshell-fb
 
 DHCP_ADDITIONAL_SETUP=(
   "dhcp-option=option:dns-server,172.26.0.1\n"
@@ -495,9 +495,19 @@ tee /etc/exports <<EOF
 /srv/pxe    fdd5:a799:9326:171d::/64(all_squash,insecure,ro)
 EOF
 
+# configure cifs
+tee /etc/samba/smb.conf <<EOF
+[pxe]
+path = /srv/pxe
+browseable = yes
+read only = yes
+guest ok = yes
+public = yes
+EOF
+
 # Enable all configured services
 systemctl enable dnsmasq ntpd.timer step-ca hosts-calc nfsv4-server rpc-statd \
-  target update-arch-target
+  target update-arch-target smb
 
 # configure the firewall
 firewall-offline-cmd --zone=public --add-service=dhcp
@@ -516,6 +526,7 @@ firewall-offline-cmd --zone=public --add-port=32767/udp
 firewall-offline-cmd --zone=public --add-port=32765/tcp
 firewall-offline-cmd --zone=public --add-port=32765/udp
 firewall-offline-cmd --zone=public --add-service=iscsi-target
+firewall-offline-cmd --zone=public --add-service=samba
 
 # disable network config in cloud init
 tee /etc/cloud/cloud.cfg.d/99-custom-networking.cfg <<EOF
