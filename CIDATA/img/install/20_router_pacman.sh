@@ -161,12 +161,12 @@ ln -s /srv/tftp/pxelinux.cfg/default /srv/tftp/efi32/pxelinux.cfg/default
 ln -s /srv/tftp/pxelinux.cfg/default /srv/tftp/efi64/pxelinux.cfg/default
 
 # configure http
-mkdir -p /srv/http/arch/x86_64
+mkdir -p /srv/pxe/arch/x86_64
 mkdir -p /etc/systemd/system/darkhttpd.service.d
 tee /etc/systemd/system/darkhttpd.service.d/override.conf <<EOF
 [Service]
 ExecStart=
-ExecStart=/usr/bin/darkhttpd /srv/http --ipv6 --addr '::' --port 80 --uid http --gid http --chroot --no-listing --mimetypes /etc/conf.d/mimetypes
+ExecStart=/usr/bin/darkhttpd /srv/pxe --ipv6 --addr '::' --port 80 --mimetypes /etc/conf.d/mimetypes
 EOF
 systemctl enable darkhttpd.service
 
