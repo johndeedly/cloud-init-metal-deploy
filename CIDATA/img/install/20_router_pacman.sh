@@ -489,18 +489,14 @@ sed -i '0,/^\[statd\].*/s//[statd]\nport=32765/' /etc/nfs.conf
 sed -i '0,/^\[nfsd\].*/s//[nfsd]\nthreads=16/' /etc/nfs.conf
 
 tee /etc/exports <<EOF
-/srv        127.0.0.0/8(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        172.26.0.0/15(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        ::1/128(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv        fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check,fsid=0,crossmnt)
-/srv/pxe    127.0.0.0/8(ro,no_root_squash,no_subtree_check)
-/srv/pxe    172.26.0.0/15(ro,no_root_squash,no_subtree_check)
-/srv/pxe    ::1/128(ro,no_root_squash,no_subtree_check)
-/srv/pxe    fdd5:a799:9326:171d::/64(ro,no_root_squash,no_subtree_check)
+/srv/pxe    127.0.0.0/8(all_squash,insecure,ro)
+/srv/pxe    172.26.0.0/15(all_squash,insecure,ro)
+/srv/pxe    ::1/128(all_squash,insecure,ro)
+/srv/pxe    fdd5:a799:9326:171d::/64(all_squash,insecure,ro)
 EOF
 
 # Enable all configured services
-systemctl enable dnsmasq ntpd.timer step-ca hosts-calc nfs-server rpc-statd \
+systemctl enable dnsmasq ntpd.timer step-ca hosts-calc nfsv4-server rpc-statd \
   target update-arch-target
 
 # configure the firewall
