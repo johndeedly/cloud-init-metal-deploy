@@ -159,7 +159,7 @@ build {
 tee output/cloud_ready/cloud_ready-x86_64.run.sh <<EOF
 #!/usr/bin/env bash
 trap "trap - SIGTERM && kill -- -\$\$" SIGINT SIGTERM EXIT
-mkdir -p "/tmp/swtpm.0" "share"
+mkdir -p "/tmp/swtpm.0"
 /usr/bin/swtpm socket --tpm2 --tpmstate dir="/tmp/swtpm.0" --ctrl type=unixio,path="/tmp/swtpm.0/vtpm.sock" &
 /usr/bin/qemu-system-x86_64 \\
   -name cloud_ready-x86_64 \\
@@ -173,14 +173,29 @@ mkdir -p "/tmp/swtpm.0" "share"
   -drive file=efivars.fd,if=pflash,unit=1,format=raw \\
   -smp ${var.cpu_cores},sockets=1,cores=${var.cpu_cores},maxcpus=${var.cpu_cores} -m ${var.memory}M \\
   -netdev user,id=user.0,hostfwd=tcp::9091-:9090 -device virtio-net,netdev=user.0 \\
+  -netdev socket,id=user.1,listen=:46273 -device virtio-net,netdev=user.1 \\
   -audio driver=pa,model=hda,id=snd0 -device hda-output,audiodev=snd0 \\
-  -virtfs local,path=share,mount_tag=host.0,security_model=mapped,id=host.0 \\
   -usbdevice mouse -usbdevice keyboard \\
   -rtc base=utc,clock=host
 EOF
 # remove -display gtk,gl=on for no 3d acceleration
 # -display none, -daemonize, hostfwd=::12345-:22 for running as a daemonized server
 chmod +x output/cloud_ready/cloud_ready-x86_64.run.sh
+tee output/cloud_ready/cloud_ready-x86_64.pxe.sh <<EOF
+#!/usr/bin/env bash
+/usr/bin/qemu-system-x86_64 \\
+  -name cloud_ready-x86_64 \\
+  -machine type=q35,accel=kvm \\
+  -vga virtio \\
+  -display gtk,gl=on \\
+  -cpu host \\
+  -smp ${var.cpu_cores},sockets=1,cores=${var.cpu_cores},maxcpus=${var.cpu_cores} -m ${var.memory}M \\
+  -netdev socket,id=user.0,connect=:46273 -device virtio-net,netdev=user.0 \\
+  -audio driver=pa,model=hda,id=snd0 -device hda-output,audiodev=snd0 \\
+  -usbdevice mouse -usbdevice keyboard \\
+  -rtc base=utc,clock=host
+EOF
+chmod +x output/cloud_ready/cloud_ready-x86_64.pxe.sh
 EOS
     ]
     only_on = ["linux"]
