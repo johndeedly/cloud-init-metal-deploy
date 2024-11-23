@@ -33,9 +33,9 @@ pxe_nbd_mount_handler() {
     # 2nd: setup the nbd filesystem to the nbd boot device
     msg ":: Setup NBD from '${pxe_nbd_srv}' to '${nbd_boot}'"
     if [ "${copytoram}" = "y" ]; then
-        nbd-client "${pxe_nbd_srv}" -N arch "${nbd_boot}"
+        nbd-client "${pxe_nbd_srv}" -N pxe "${nbd_boot}"
     else
-        nbd-client "${pxe_nbd_srv}" -N arch -systemd-mark -persist "${nbd_boot}"
+        nbd-client "${pxe_nbd_srv}" -N pxe -systemd-mark -persist "${nbd_boot}"
     fi
 
     # 3rd: check the copy to RAM filesystem is present

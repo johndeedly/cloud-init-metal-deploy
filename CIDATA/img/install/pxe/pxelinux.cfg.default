@@ -49,14 +49,14 @@ LABEL ArchCIFS
 MENU LABEL Boot Arch Linux using CIFS
 LINUX http://ipaddr/arch/x86_64/vmlinuz-linux
 INITRD http://ipaddr/arch/x86_64/initramfs-linux-pxe.img
-APPEND pxe_cifs_srv=//${pxeserver}/arch copytoram=n cow_spacesize=75%
+APPEND pxe_cifs_srv=//${pxeserver}/pxe copytoram=n cow_spacesize=75%
 SYSAPPEND 3
 
 LABEL ArchCIFSCopy
 MENU LABEL Boot Arch Linux using CIFS (Copy to RAM)
 LINUX http://ipaddr/arch/x86_64/vmlinuz-linux
 INITRD http://ipaddr/arch/x86_64/initramfs-linux-pxe.img
-APPEND pxe_cifs_srv=//${pxeserver}/arch copytoram=y cow_spacesize=75%
+APPEND pxe_cifs_srv=//${pxeserver}/pxe copytoram=y cow_spacesize=75%
 SYSAPPEND 3
 
 LABEL ArchiSCSI
