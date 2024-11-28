@@ -23,7 +23,7 @@ plugins=ifupdown,keyfile
 dns=systemd-resolved
 
 [keyfile]
-unmanaged-devices=*,except:type:wifi,except:type:wwan,except:type:ethernet
+unmanaged-devices=*,except:type:wifi,except:type:wwan
 
 [ifupdown]
 managed=true
@@ -391,19 +391,6 @@ Type=Application
 Categories=System;Utility;
 EOF
 chmod +x /etc/xdg/autostart/ibus-daemon.desktop
-
-# autostart cmst frontend for connman minimized
-tee /etc/xdg/autostart/cmst.desktop <<EOF
-[Desktop Entry]
-Name=Network Configuration
-Name[de]=Netzwerk-Konfiguration
-Comment=QT GUI frontend for connman
-Exec=/usr/bin/cmst -m
-Terminal=false
-Type=Application
-X-GNOME-Autostart-enabled=true
-EOF
-chmod +x /etc/xdg/autostart/cmst.desktop
 
 # wallpaper switcher service
 tee /usr/local/bin/wallpaper.sh <<'EOF'
