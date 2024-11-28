@@ -9,7 +9,7 @@ LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed \
   cups ipp-usb libreoffice-fresh libreoffice-fresh-de krita seahorse freerdp notepadqq gitg keepassxc pdfpc zettlr obsidian \
   bluez blueman \
   texlive-bin xdg-desktop-portal xdg-desktop-portal-gtk wine-wow64 winetricks mpv gpicview qalculate-gtk drawio-desktop code \
-  pamac flatpak gnome-keyring librewolf betterbird virt-manager \
+  pamac flatpak firefox chromium gnome-keyring virt-manager \
   ghostscript gsfonts foomatic-db-engine foomatic-db foomatic-db-nonfree foomatic-db-ppds foomatic-db-nonfree-ppds gutenprint foomatic-db-gutenprint-ppds hplip \
   cinnamon cinnamon-translations system-config-printer
 
@@ -78,22 +78,82 @@ tee /etc/skel/.Xmodmap <<EOF
 keysym Menu = Super_R
 EOF
 
-# configure librewolf
-LIBREWOLF_EXTENSIONS=(
-  adguard-adblocker
-  keepassxc-browser
-  single-file
-  sponsorblock
-  forget_me_not
-  return-youtube-dislikes
-  adblock-for-youtube-tm
-)
-printf -v tmparr '"https://addons.mozilla.org/firefox/downloads/latest/%s/",' "${LIBREWOLF_EXTENSIONS[@]}"
-jq_cmdstr=".policies.Extensions.Install |= . + [${tmparr%,}]"
-unset tmparr
-jq "$jq_cmdstr" /usr/lib/librewolf/distribution/policies.json > /tmp/policies.json
-cp /tmp/policies.json /usr/lib/librewolf/distribution/policies.json
-rm /tmp/policies.json
+# configure firefox
+mkdir -p /usr/lib/firefox/distribution
+(
+  jq -Rs '{"policies":{"Extensions":{"Install":split("\n")|map(if index(" ") then split(" ")|"https://addons.mozilla.org/firefox/downloads/latest/"+.[0]+"/" else empty end),"Locked":split("\n")|map(if index(" ") then split(" ")|.[1] else empty end)}}}' <<'EOF'
+adguard-adblocker adguardadblocker@adguard.com
+keepassxc-browser keepassxc-browser@keepassxc.org
+single-file {531906d3-e22f-4a6c-a102-8057b88a1a63}
+sponsorblock sponsorBlocker@ajay.app
+forget_me_not forget-me-not@lusito.info
+return-youtube-dislikes {762f9885-5a13-4abd-9c77-433dcd38b8fd}
+adblock-for-youtube-tm {0ac04bdb-d698-452f-8048-bcef1a3f4b0d}
+EOF
+) | tee /usr/lib/firefox/distribution/policies.json
+
+# configure chromium
+mkdir -p /etc/chromium/policies/managed
+tee /etc/chromium/policies/managed/adblock.json <<'EOF'
+{
+    "BlockThirdPartyCookies": true,
+    "AdsSettingForIntrusiveAdsSites": 2,
+    "DNSInterceptionChecksEnabled": false,
+    "ExtensionManifestV2Availability": 2,
+    "DnsOverHttpsMode": "off"
+}
+EOF
+tee /etc/chromium/policies/managed/default-settings.json <<'EOF'
+{
+    "ShowHomeButton": true,
+    "ChromeAppsEnabled": false,
+    "DefaultBrowserSettingEnabled": false,
+    "HardwareAccelerationModeEnabled": true
+}
+EOF
+tee /etc/chromium/policies/managed/default-settings.json <<'EOF'
+{
+    "ShowHomeButton": true,
+    "ChromeAppsEnabled": false,
+    "DefaultBrowserSettingEnabled": false,
+    "HardwareAccelerationModeEnabled": true
+}
+EOF
+(
+jq -Rs '{"ExtensionInstallForcelist":split("\n")|map(if match(".") then .+";https://clients2.google.com/service/update2/crx" else empty end)}' <<'EOF'
+bgnkhhnnamicmpeenaelnjfhikgbkllg
+mpiodijhokgodhhofbcjdecpffjipkle
+mnjggcdmjocbbbhaepdhchncahnbgone
+cmedhionkhpnakcndndgjdbohmhepckk
+oboonakemofpalcgghocfoadofidjkkk
+hdadmgabliibighlbejhlglfjgplfmhb
+gebbhagfogifgggkldgodflihgfeippi
+cnkdjjdmfiffagllbiiilooaoofcoeff
+EOF
+) | tee /etc/chromium/policies/managed/extensions-default.json
+tee /etc/chromium/policies/managed/telemetry-off.json <<'EOF'
+{
+    "MetricsReportingEnabled": false,
+    "SafeBrowsingProtectionLevel": 0,
+    "AbusiveExperienceInterventionEnforce": false,
+    "GoogleSearchSidePanelEnabled": false,
+    "AdvancedProtectionAllowed": false,
+    "BrowserSignin": 0
+}
+EOF
+tee /etc/chromium/policies/managed/duckduckgo.json <<'EOF'
+{
+    "DefaultSearchProviderEnabled": true,
+    "DefaultSearchProviderName": "DuckDuckGo",
+    "DefaultSearchProviderSearchURL": "https://duckduckgo.com/?q={searchTerms}",
+    "DefaultSearchProviderSuggestURL": "https://duckduckgo.com/ac/?type=list&kl=de-de&q={searchTerms}"
+}
+EOF
+tee /etc/chromium/policies/managed/restore-session.json <<'EOF'
+{
+    "RestoreOnStartup": 1
+}
+EOF
 
 # configure cinnamon desktop
 mkdir -p /etc/dconf/profile
@@ -106,7 +166,7 @@ dconf update
 mkdir -p /etc/dconf/db/local.d
 tee /etc/dconf/db/local.d/99-userdefaults <<EOF
 [org/cinnamon]
-favorite-apps=['librewolf.desktop', 'betterbird.desktop', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
+favorite-apps=['chromium.desktop', 'firefox.desktop', 'kitty.desktop', 'cinnamon-settings.desktop', 'nemo.desktop']
 
 [org/cinnamon/desktop/background]
 picture-uri='file:///usr/share/backgrounds/elementaryos-default'
@@ -480,8 +540,8 @@ tee /etc/skel/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json <<
         ],
         "value": [
             "nemo.desktop",
-            "librewolf.desktop",
-            "betterbird.desktop",
+            "chromium.desktop",
+            "firefox.desktop",
             "kitty.desktop",
             "code-oss.desktop",
             "drawio.desktop"
