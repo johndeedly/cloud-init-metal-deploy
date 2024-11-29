@@ -422,6 +422,17 @@ write_files:
         fi
       fi
       
+      # bugfix for https://gitlab.archlinux.org/archlinux/packaging/packages/cloud-init/-/issues/3
+      BUILD_ARCH=$(yq -r '.setup.distro == "archlinux"' /iso/config.yml)
+      if [ "true" = "$BUILD_ARCH" ]; then
+        ln -s /mnt/bin/nc /mnt/bin/nc.openbsd || true
+        mkdir -p /mnt/etc/systemd/system/cloud-init-main.service.d
+        tee mkdir -p /mnt/etc/systemd/system/cloud-init-main.service.d/override.conf <<EOF
+      Before=
+      EOF
+        arch-chroot /mnt systemctl enable cloud-init-main.service
+      fi
+      
       # finalize /mnt
       cp /cidata_log /mnt/cidata_log || true
       sync
