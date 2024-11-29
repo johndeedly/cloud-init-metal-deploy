@@ -111,14 +111,6 @@ tee /etc/chromium/policies/managed/default-settings.json <<'EOF'
     "HardwareAccelerationModeEnabled": true
 }
 EOF
-tee /etc/chromium/policies/managed/default-settings.json <<'EOF'
-{
-    "ShowHomeButton": true,
-    "ChromeAppsEnabled": false,
-    "DefaultBrowserSettingEnabled": false,
-    "HardwareAccelerationModeEnabled": true
-}
-EOF
 (
 jq -Rs '{"ExtensionInstallForcelist":split("\n")|map(if match(".") then .+";https://clients2.google.com/service/update2/crx" else empty end)}' <<'EOF'
 bgnkhhnnamicmpeenaelnjfhikgbkllg
@@ -209,7 +201,7 @@ name='lf'
 
 [org/cinnamon/desktop/keybindings/custom-keybindings/custom3]
 binding=['<Alt>w']
-command='flatpak run org.chromium.Chromium'
+command='chromium'
 name='chromium'
 
 [org/cinnamon/desktop/keybindings/custom-keybindings/custom4]
