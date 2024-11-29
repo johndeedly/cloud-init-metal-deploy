@@ -48,6 +48,7 @@ files:
   pacman:
     docker:
       - install/20_docker_pacman.sh
+      - per-boot/20_gitlab_docker.sh
     graphical:
       - install/20_graphical_pacman.sh
     mirror:
