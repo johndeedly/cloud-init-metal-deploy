@@ -49,6 +49,8 @@ files:
     docker:
       - install/20_docker_pacman.sh
       - per-boot/20_gitlab_docker.sh
+    podman:
+      - install/99_podman_image.sh
     graphical:
       - install/20_graphical_pacman.sh
     mirror:
