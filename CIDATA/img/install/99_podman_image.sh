@@ -15,6 +15,12 @@ systemctl unmask systemd-network-generator
 
 LC_ALL=C yes | LC_ALL=C pacman -S --noconfirm --needed buildah
 
+export TMPDIR="/var/tmp/buildah/tmp"
+mkdir -p "${TMPDIR}" /var/tmp/buildah/run/storage /var/tmp/buildah/var/storage
+sed -i 's|/run/containers/storage|/var/tmp/buildah/run/storage|g' /etc/containers/storage.conf
+sed -i 's|/var/lib/containers/storage|/var/tmp/buildah/var/storage|g' /etc/containers/storage.conf
+buildah info
+
 buildah --cap-add=SYS_CHROOT,NET_ADMIN,NET_RAW --name worker from scratch
 buildah config --entrypoint "/usr/sbin/init" --cmd '["--log-level=info", "--unit=multi-user.target"]' worker
 scratchmnt=$(buildah mount worker)
